@@ -1,0 +1,6 @@
+"D:\Software\ArduinoProgram\KT0937\KT0937_STC8\Objects\STARTUP.obj",
+"D:\Software\ArduinoProgram\KT0937\KT0937_STC8\Objects\main.obj",
+".\stc_usb_cdc_8h.LIB" 
+TO "D:\Software\ArduinoProgram\KT0937\KT0937_STC8\Objects\KT0937_STC8" 
+
+PRINT(".\Listings\KT0937_STC8.map") REMOVEUNUSED 

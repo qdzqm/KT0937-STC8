@@ -1,0 +1,244 @@
+C51 COMPILER V9.60.7.0   MAIN                                                              03/01/2025 19:08:13 PAGE 1   
+
+
+C51 COMPILER V9.60.7.0, COMPILATION OF MODULE MAIN
+OBJECT MODULE PLACED IN .\Objects\main.obj
+COMPILER INVOKED BY: C:\Keil_v5\C51\BIN\C51.EXE main.c OMF2 OPTIMIZE(8,SPEED) BROWSE DEBUG PRINT(.\Listings\main.lst) TA
+                    -BS(2) OBJECT(.\Objects\main.obj)
+
+line level    source
+
+   1          /*---------------------------------------------------------------------*/
+   2          /* --- STC MCU Limited ------------------------------------------------*/
+   3          /* --- STC 1T Series MCU Demo Programme -------------------------------*/
+   4          /* --- Mobile: (86)13922805190 ----------------------------------------*/
+   5          /* --- Fax: 86-0513-55012956,55012947,55012969 ------------------------*/
+   6          /* --- Tel: 86-0513-55012928,55012929,55012966 ------------------------*/
+   7          /* --- Web: www.STCAI.com ---------------------------------------------*/
+   8          /* --- BBS: www.STCAIMCU.com  -----------------------------------------*/
+   9          /* --- QQ:  800003751 -------------------------------------------------*/
+  10          /* 如果要在程序中使用此代码,请在程序中注明使用了STC的资料及程序            */
+  11          /*---------------------------------------------------------------------*/
+  12          
+  13          #include  "config.h"
+  14          #include  "STC8G_H_GPIO.h"
+  15          #include  "STC8G_H_I2C.h"
+  16          #include  "STC8G_H_Soft_I2C.h"
+  17          #include  "STC8G_H_Timer.h"
+  18          #include  "STC8G_H_UART.h"
+  19          #include  "STC8G_H_NVIC.h"
+  20          #include  "STC8G_H_Switch.h"
+  21          
+  22          /*************  功能说明  **************
+  23          
+  24          本例程基于STC8H8K64U为主控芯片的开天斧核心板进行编写测试，STC8G、STC8H系列芯片可通用参考.
+  25          
+  26          内部集成I2C串行总线控制器做从机模式，SCL->P2.5, SDA->P2.4;
+  27          IO口模拟I2C做主机模式，SCL->P0.0, SDA->P0.1;
+  28          通过外部飞线连接 P0.0->P2.5, P0.1->P2.4，实现I2C自发自收功能。
+  29          
+  30          使用Timer0的16位自动重装来产生1ms节拍,程序运行于这个节拍下,用户修改MCU主时钟频率时,自动定时于1ms.
+  31          计数器每秒钟加1, 计数范围为0~199.
+  32          
+  33          上电后主机每秒钟发送一次计数数据，串口打印发送内容；从机接收到数据后通过串口打印接收结果。
+  34          
+  35          需要在"STC8G_H_UART.h"里设置： #define  PRINTF_SELECT  UART1
+  36          
+  37          下载时, 选择时钟 24MHz (可以在配置文件"config.h"中修改).
+  38          
+  39          ******************************************/
+  40          
+  41          /*************  本地常量声明  **************/
+  42          
+  43          
+  44          /*************  本地变量声明  **************/
+  45          bit B_1ms,fm;          //1ms标志
+  46          
+  47          u8  temp[4];     //通用数组
+  48          u16 msecond;
+  49          u8  second;
+  50          u32 freq;
+  51          
+  52          /*************  本地函数声明  **************/
+  53          
+  54          //void DisplayScan(void);
+C51 COMPILER V9.60.7.0   MAIN                                                              03/01/2025 19:08:13 PAGE 2   
+
+  55          
+  56          /*************  外部函数和变量声明 *****************/
+  57          
+  58          
+  59          /******************** IO口配置 ********************/
+  60          void  GPIO_config(void)
+  61          {
+  62   1        P0_MODE_IO_PU(GPIO_Pin_0 | GPIO_Pin_1);   //P0.0,P0.1 设置为准双向口
+  63   1        P3_MODE_IO_PU(GPIO_Pin_2 | GPIO_Pin_3);   //P3.3,P3.2 设置为准双向口
+  64   1        P3_MODE_IO_PU(GPIO_Pin_0 | GPIO_Pin_1);   //P3.0,P3.1 设置为准双向口
+  65   1        P1_MODE_IN_HIZ(GPIO_Pin_0);
+  66   1      }
+  67          
+  68          /************************ 定时器配置 ****************************/
+  69          void  Timer_config(void)
+  70          {
+  71   1        TIM_InitTypeDef   TIM_InitStructure;            //结构定义
+  72   1        TIM_InitStructure.TIM_Mode      = TIM_16BitAutoReload;  //指定工作模式,   TIM_16BitAutoReload,TIM_16Bit,T
+             -IM_8BitAutoReload,TIM_16BitAutoReloadNoMask
+  73   1        TIM_InitStructure.TIM_ClkSource = TIM_CLOCK_1T;         //指定时钟源,     TIM_CLOCK_1T,TIM_CLOCK_12T,TIM_
+             -CLOCK_Ext
+  74   1        TIM_InitStructure.TIM_ClkOut    = DISABLE;              //是否输出高速脉冲, ENABLE或DISABLE
+  75   1        TIM_InitStructure.TIM_Value     = 65536UL - (MAIN_Fosc / 1000UL);   //初值,
+  76   1        TIM_InitStructure.TIM_Run       = ENABLE;               //是否初始化后启动定时器, ENABLE或DISABLE
+  77   1        Timer_Inilize(Timer0,&TIM_InitStructure);               //初始化Timer0    Timer0,Timer1,Timer2,Timer3,Time
+             -r4
+  78   1        NVIC_Timer0_Init(ENABLE,Priority_0);    //中断使能, ENABLE/DISABLE; 优先级(低到高) Priority_0,Priority_1,
+             -Priority_2,Priority_3
+  79   1      }
+  80          
+  81          /****************  I2C初始化函数 *****************/
+  82          void  I2C_config(void)
+  83          {
+  84   1        I2C_InitTypeDef   I2C_InitStructure;
+  85   1      
+  86   1        I2C_InitStructure.I2C_Mode      = I2C_Mode_Master;    //主从选择   I2C_Mode_Master, I2C_Mode_Slave
+  87   1        I2C_InitStructure.I2C_Enable    = ENABLE;           //I2C功能使能,   ENABLE, DISABLE
+  88   1        I2C_InitStructure.I2C_Speed  = 32;
+  89   1        I2C_InitStructure.I2C_MS_WDTA   = DISABLE;            //主机模式下,是否使能自动发送功能,   ENABLE, DISABLE
+  90   1        //I2C_InitStructure.I2C_SL_MA     = ENABLE;           //使能从机地址比较功能,   ENABLE, DISABLE
+  91   1        //I2C_InitStructure.I2C_SL_ADR    = 0x2d;             //从机设备地址,  0~127  (0x2d<<1 = 0x5a)
+  92   1        I2C_Init(&I2C_InitStructure);
+  93   1        //NVIC_I2C_Init(I2C_Mode_Master,I2C_ESTAI|I2C_ERXI|I2C_ETXI|I2C_ESTOI,Priority_0);  //主从模式, I2C_Mode_M
+             -aster, I2C_Mode_Slave; 中断使能, I2C_ESTAI/I2C_ERXI/I2C_ETXI/I2C_ESTOI/DISABLE; 优先级(低到高) Priority_0,Priority_1,Pri
+             -ority_2,Priority_3
+  94   1      
+  95   1        //I2C_SW(I2C_P33_P32);          //I2C_P14_P15,I2C_P24_P25,I2C_P33_P32
+  96   1        I2C_SW(I2C_P14_P15);          //I2C_P14_P15,I2C_P24_P25,I2C_P33_P32
+  97   1      }
+  98          
+  99          /****************  UART初始化函数 *****************/
+ 100          void  UART_config(void)
+ 101          {
+ 102   1        COMx_InitDefine   COMx_InitStructure;         //结构定义
+ 103   1      
+ 104   1        COMx_InitStructure.UART_Mode      = UART_8bit_BRTx; //模式, UART_ShiftRight,UART_8bit_BRTx,UART_9bit,UART
+             -_9bit_BRTx
+ 105   1        COMx_InitStructure.UART_BRT_Use   = BRT_Timer1;     //选择波特率发生器, BRT_Timer1, BRT_Timer2 (注意: 串口2
+             -固定使用BRT_Timer2)
+ 106   1        COMx_InitStructure.UART_BaudRate  = 115200ul;     //波特率, 一般 110 ~ 115200
+ 107   1        COMx_InitStructure.UART_RxEnable  = ENABLE;       //接收允许,   ENABLE或DISABLE
+ 108   1        COMx_InitStructure.BaudRateDouble = DISABLE;      //波特率加倍, ENABLE或DISABLE
+C51 COMPILER V9.60.7.0   MAIN                                                              03/01/2025 19:08:13 PAGE 3   
+
+ 109   1        UART_Configuration(UART1, &COMx_InitStructure);   //初始化串口1 UART1,UART2,UART3,UART4
+ 110   1        NVIC_UART1_Init(ENABLE,Priority_1);   //中断使能, ENABLE/DISABLE; 优先级(低到高) Priority_0,Priority_1,Pri
+             -ority_2,Priority_3
+ 111   1      
+ 112   1        UART1_SW(UART1_SW_P30_P31);   //UART1_SW_P30_P31,UART1_SW_P36_P37,UART1_SW_P16_P17,UART1_SW_P43_P44
+ 113   1      }
+ 114          
+ 115          /**************** 写入KT0937寄存器 *****************/
+ 116          void WriteRegister(u8 reg, u8 value) 
+ 117          {
+ 118   1        I2C_Writebyte(0x6a, reg, &value);
+ 119   1      }
+ 120          
+ 121          /**************** 读取KT0937寄存器 *****************/
+ 122          void ReadRegister(u8 reg, u8 *value)
+ 123          {
+ 124   1        I2C_Readbyte(0x6a, reg, value);
+ 125   1      }
+ 126          
+ 127          /**************** 配置FM *****************/
+ 128          void SetFM(){
+ 129   1        WriteRegister(0x04, 0x80);//Clock initialization completed.
+ 130   1        WriteRegister(0x51, 0x02);//Dial controlled channel increase/decrease
+ 131   1        WriteRegister(0x9b, 0xcd);//设置87.5MHz~108MHz之间分为205个通道，间隔0.1MHz
+ 132   1        WriteRegister(0x9a, 0x00);//设置87.5MHz~108MHz之间分为205个通道，间隔0.1MHz
+ 133   1        WriteRegister(0x88, 0x88);//可以改变band，FM模式，最高频率是108MHz
+ 134   1        WriteRegister(0x89, 0x70);//最高频率是108MHz
+ 135   1        WriteRegister(0x99, 0xd6);//最低频率是87.5MHz
+ 136   1        WriteRegister(0x98, 0x06);//最低频率是87.5MHz
+ 137   1        WriteRegister(0x18, 0x59);//FM Band Space 100KHz, MW Band Space 9KHz
+ 138   1        WriteRegister(0x71, 0x04);//Enable Channel ADC, Channel ADC Start
+ 139   1        WriteRegister(0x22, 0xd5);//Enable Tune Interrupt, INT is edge triggered, FM_SMUTE_START_SNR=default
+ 140   1        WriteRegister(0x1F, 0xd3);//INT interrupt is active high, FM_SMUTE_START_RSSI=default, FM_SMUTE_SLOPE_RSS
+             -I=default
+ 141   1        WriteRegister(0x2b, 0x20);//Force mono, 75us De-emphasis, Blend enable
+ 142   1        }
+ 143          
+ 144            /**************** 读取当前频率 *****************/
+ 145            void GetFrequency(u32 *frequency) {
+ 146   1        u8 high_byte, low_byte;
+ 147   1        ReadRegister(0xe4, &high_byte);
+ 148   1        ReadRegister(0xe5, &low_byte);
+ 149   1        *frequency = (high_byte << 8) | low_byte;
+ 150   1      
+ 151   1        }
+ 152          /******************** task A **************************/
+ 153          void main(void)
+ 154          {
+ 155   1        EAXSFR();   /* 扩展寄存器访问使能 */
+ 156   1        GPIO_config();
+ 157   1        Timer_config();
+ 158   1        I2C_config();
+ 159   1        UART_config();
+ 160   1        OLED_Init();
+ 161   1        OLED_Clear();
+ 162   1        OLED_ShowString(0, 0, "FM Radio", 16);
+ 163   1        EA = 1;
+ 164   1        fm = FALSE;
+ 165   1          SetFM();
+ 166   1        while (1)
+ 167   1        {
+ 168   2          if(B_1ms)
+C51 COMPILER V9.60.7.0   MAIN                                                              03/01/2025 19:08:13 PAGE 4   
+
+ 169   2          {
+ 170   3            B_1ms = 0;
+ 171   3                
+ 172   3                  if(++msecond >= 1000)   //1秒到
+ 173   3                  {
+ 174   4              if(!fm)
+ 175   4              {
+ 176   5                SetFM();
+ 177   5                GetFrequency(&freq);
+ 178   5                if(freq == 1720)
+ 179   5                {
+ 180   6                  SetFM();
+ 181   6                  printf("Trying to set FM\r\n");
+ 182   6                }
+ 183   5                else
+ 184   5                {
+ 185   6                  fm = TRUE;
+ 186   6                  printf("Set FM\r\n");
+ 187   6                }
+ 188   5              }
+ 189   4                  }
+ 190   3          }
+ 191   2      
+ 192   2          if(P10 == 1)
+ 193   2          {
+ 194   3            GetFrequency(&freq);
+ 195   3            printf("Frequency: %5.1f\r\n", (float)freq/20);
+ 196   3      
+ 197   3          }
+ 198   2        }
+ 199   1        
+ 200   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    459    ----
+   CONSTANT SIZE    =     56    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =     11      27
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =      2    ----
+   EDATA SIZE       =   ----    ----
+   HDATA SIZE       =   ----    ----
+   XDATA CONST SIZE =   ----    ----
+   FAR CONST SIZE   =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

@@ -1,0 +1,194 @@
+C51 COMPILER V9.60.7.0   STC8G_H_UART_ISR                                                  03/01/2025 19:08:14 PAGE 1   
+
+
+C51 COMPILER V9.60.7.0, COMPILATION OF MODULE STC8G_H_UART_ISR
+OBJECT MODULE PLACED IN .\Objects\STC8G_H_UART_Isr.obj
+COMPILER INVOKED BY: C:\Keil_v5\C51\BIN\C51.EXE STC8G_H_UART_Isr.c OMF2 OPTIMIZE(8,SPEED) BROWSE DEBUG PRINT(.\Listings\
+                    -STC8G_H_UART_Isr.lst) TABS(2) OBJECT(.\Objects\STC8G_H_UART_Isr.obj)
+
+line level    source
+
+   1          /*---------------------------------------------------------------------*/
+   2          /* --- STC MCU Limited ------------------------------------------------*/
+   3          /* --- STC 1T Series MCU Demo Programme -------------------------------*/
+   4          /* --- Mobile: (86)13922805190 ----------------------------------------*/
+   5          /* --- Fax: 86-0513-55012956,55012947,55012969 ------------------------*/
+   6          /* --- Tel: 86-0513-55012928,55012929,55012966 ------------------------*/
+   7          /* --- Web: www.STCAI.com ---------------------------------------------*/
+   8          /* --- BBS: www.STCAIMCU.com  -----------------------------------------*/
+   9          /* --- QQ:  800003751 -------------------------------------------------*/
+  10          /* 如果要在程序中使用此代码,请在程序中注明使用了STC的资料及程序            */
+  11          /*---------------------------------------------------------------------*/
+  12          
+  13          #include "STC8G_H_UART.h"
+  14          
+  15          //========================================================================
+  16          // 函数: UART1_ISR_Handler
+  17          // 描述: UART1中断函数.
+  18          // 参数: none.
+  19          // 返回: none.
+  20          // 版本: V1.0, 2020-09-23
+  21          //========================================================================
+  22          #ifdef UART1
+  23          void UART1_ISR_Handler (void) interrupt UART1_VECTOR
+  24          {
+  25   1        if(RI)
+  26   1        {
+  27   2          RI = 0;
+  28   2      
+  29   2              if(COM1.RX_Cnt >= COM_RX1_Lenth)  COM1.RX_Cnt = 0;
+  30   2              RX1_Buffer[COM1.RX_Cnt++] = SBUF;
+  31   2              COM1.RX_TimeOut = TimeOutSet1;
+  32   2        }
+  33   1      
+  34   1        if(TI)
+  35   1        {
+  36   2          TI = 0;
+  37   2          
+  38   2              #if(UART_QUEUE_MODE == 1)   //判断是否使用队列模式
+                  if(COM1.TX_send != COM1.TX_write)
+                  {
+                    SBUF = TX1_Buffer[COM1.TX_send];
+                    if(++COM1.TX_send >= COM_TX1_Lenth)   COM1.TX_send = 0;
+                  }
+                  else  COM1.B_TX_busy = 0;
+                      #else
+  46   2              COM1.B_TX_busy = 0;     //使用阻塞方式发送直接清除繁忙标志
+  47   2              #endif
+  48   2        }
+  49   1      }
+  50          #endif
+  51          
+  52          //========================================================================
+  53          // 函数: UART2_ISR_Handler
+  54          // 描述: UART2中断函数.
+C51 COMPILER V9.60.7.0   STC8G_H_UART_ISR                                                  03/01/2025 19:08:14 PAGE 2   
+
+  55          // 参数: none.
+  56          // 返回: none.
+  57          // 版本: V1.0, 2020-09-23
+  58          //========================================================================
+  59          #ifdef UART2
+  60          void UART2_ISR_Handler (void) interrupt UART2_VECTOR
+  61          {
+  62   1        if(RI2)
+  63   1        {
+  64   2          CLR_RI2();
+  65   2      
+  66   2          
+  67   2              if(COM2.RX_Cnt >= COM_RX2_Lenth)  COM2.RX_Cnt = 0;
+  68   2              RX2_Buffer[COM2.RX_Cnt++] = S2BUF;
+  69   2              COM2.RX_TimeOut = TimeOutSet2;
+  70   2        }
+  71   1      
+  72   1        if(TI2)
+  73   1        {
+  74   2          CLR_TI2();
+  75   2          
+  76   2              #if(UART_QUEUE_MODE == 1)   //判断是否使用队列模式
+                  if(COM2.TX_send != COM2.TX_write)
+                  {
+                    S2BUF = TX2_Buffer[COM2.TX_send];
+                    if(++COM2.TX_send >= COM_TX2_Lenth)   COM2.TX_send = 0;
+                  }
+                  else  COM2.B_TX_busy = 0;
+                      #else
+  84   2              COM2.B_TX_busy = 0;     //使用阻塞方式发送直接清除繁忙标志
+  85   2              #endif
+  86   2        }
+  87   1      }
+  88          #endif
+  89          
+  90          //========================================================================
+  91          // 函数: UART3_ISR_Handler
+  92          // 描述: UART3中断函数.
+  93          // 参数: none.
+  94          // 返回: none.
+  95          // 版本: V1.0, 2020-09-23
+  96          //========================================================================
+  97          #ifdef UART3
+  98          void UART3_ISR_Handler (void) interrupt UART3_VECTOR
+  99          {
+ 100   1        if(RI3)
+ 101   1        {
+ 102   2          CLR_RI3();
+ 103   2      
+ 104   2              if(COM3.RX_Cnt >= COM_RX3_Lenth)  COM3.RX_Cnt = 0;
+ 105   2              RX3_Buffer[COM3.RX_Cnt++] = S3BUF;
+ 106   2              COM3.RX_TimeOut = TimeOutSet3;
+ 107   2        }
+ 108   1      
+ 109   1        if(TI3)
+ 110   1        {
+ 111   2          CLR_TI3();
+ 112   2          
+ 113   2              #if(UART_QUEUE_MODE == 1)   //判断是否使用队列模式
+                  if(COM3.TX_send != COM3.TX_write)
+                  {
+                    S3BUF = TX3_Buffer[COM3.TX_send];
+C51 COMPILER V9.60.7.0   STC8G_H_UART_ISR                                                  03/01/2025 19:08:14 PAGE 3   
+
+                    if(++COM3.TX_send >= COM_TX3_Lenth)   COM3.TX_send = 0;
+                  }
+                  else  COM3.B_TX_busy = 0;
+                      #else
+ 121   2              COM3.B_TX_busy = 0;     //使用阻塞方式发送直接清除繁忙标志
+ 122   2              #endif
+ 123   2        }
+ 124   1      }
+ 125          #endif
+ 126          
+ 127          //========================================================================
+ 128          // 函数: UART4_ISR_Handler
+ 129          // 描述: UART4中断函数.
+ 130          // 参数: none.
+ 131          // 返回: none.
+ 132          // 版本: V1.0, 2020-09-23
+ 133          //========================================================================
+ 134          #ifdef UART4
+ 135          void UART4_ISR_Handler (void) interrupt UART4_VECTOR
+ 136          {
+ 137   1        if(RI4)
+ 138   1        {
+ 139   2          CLR_RI4();
+ 140   2      
+ 141   2              if(COM4.RX_Cnt >= COM_RX4_Lenth)  COM4.RX_Cnt = 0;
+ 142   2              RX4_Buffer[COM4.RX_Cnt++] = S4BUF;
+ 143   2              COM4.RX_TimeOut = TimeOutSet4;
+ 144   2        }
+ 145   1      
+ 146   1        if(TI4)
+ 147   1        {
+ 148   2          CLR_TI4();
+ 149   2          
+ 150   2              #if(UART_QUEUE_MODE == 1)   //判断是否使用队列模式
+                  if(COM4.TX_send != COM4.TX_write)
+                  {
+                    S4BUF = TX4_Buffer[COM4.TX_send];
+                    if(++COM4.TX_send >= COM_TX4_Lenth)   COM4.TX_send = 0;
+                  }
+                  else  COM4.B_TX_busy = 0;
+                      #else
+ 158   2              COM4.B_TX_busy = 0;     //使用阻塞方式发送直接清除繁忙标志
+ 159   2              #endif
+ 160   2        }
+ 161   1      }
+ 162          #endif
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    298    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+   EDATA SIZE       =   ----    ----
+   HDATA SIZE       =   ----    ----
+   XDATA CONST SIZE =   ----    ----
+   FAR CONST SIZE   =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

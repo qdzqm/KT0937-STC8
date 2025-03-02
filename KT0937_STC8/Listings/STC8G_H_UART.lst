@@ -1,0 +1,453 @@
+C51 COMPILER V9.60.7.0   STC8G_H_UART                                                      03/01/2025 19:08:13 PAGE 1   
+
+
+C51 COMPILER V9.60.7.0, COMPILATION OF MODULE STC8G_H_UART
+OBJECT MODULE PLACED IN .\Objects\STC8G_H_UART.obj
+COMPILER INVOKED BY: C:\Keil_v5\C51\BIN\C51.EXE STC8G_H_UART.c OMF2 OPTIMIZE(8,SPEED) BROWSE DEBUG PRINT(.\Listings\STC8
+                    -G_H_UART.lst) TABS(2) OBJECT(.\Objects\STC8G_H_UART.obj)
+
+line level    source
+
+   1          /*---------------------------------------------------------------------*/
+   2          /* --- STC MCU Limited ------------------------------------------------*/
+   3          /* --- STC 1T Series MCU Demo Programme -------------------------------*/
+   4          /* --- Mobile: (86)13922805190 ----------------------------------------*/
+   5          /* --- Fax: 86-0513-55012956,55012947,55012969 ------------------------*/
+   6          /* --- Tel: 86-0513-55012928,55012929,55012966 ------------------------*/
+   7          /* --- Web: www.STCAI.com ---------------------------------------------*/
+   8          /* --- BBS: www.STCAIMCU.com  -----------------------------------------*/
+   9          /* --- QQ:  800003751 -------------------------------------------------*/
+  10          /* ���Ҫ�ڳ�����ʹ�ô˴���,���ڳ�����ע��ʹ����STC�
+             -�����ϼ�����            */
+  11          /*---------------------------------------------------------------------*/
+  12          
+  13          #include "STC8G_H_UART.h"
+  14          
+  15          //========================================================================
+  16          //                               ���ر�������
+  17          //========================================================================
+  18          
+  19          #ifdef UART1
+  20          COMx_Define COM1;
+  21          u8  xdata TX1_Buffer[COM_TX1_Lenth];  //���ͻ���
+  22          u8  xdata RX1_Buffer[COM_RX1_Lenth];  //���ջ���
+  23          #endif
+  24          #ifdef UART2
+  25          COMx_Define COM2;
+  26          u8  xdata TX2_Buffer[COM_TX2_Lenth];  //���ͻ���
+  27          u8  xdata RX2_Buffer[COM_RX2_Lenth];  //���ջ���
+  28          #endif
+  29          #ifdef UART3
+  30          COMx_Define COM3;
+  31          u8  xdata TX3_Buffer[COM_TX3_Lenth];  //���ͻ���
+  32          u8  xdata RX3_Buffer[COM_RX3_Lenth];  //���ջ���
+  33          #endif
+  34          #ifdef UART4
+  35          COMx_Define COM4;
+  36          u8  xdata TX4_Buffer[COM_TX4_Lenth];  //���ͻ���
+  37          u8  xdata RX4_Buffer[COM_RX4_Lenth];  //���ջ���
+  38          #endif
+  39          
+  40          //========================================================================
+  41          // ����: UART_Configuration
+  42          // ����: UART��ʼ������.
+  43          // ����: UARTx: UART���, COMx�ṹ����,��ο�UART.h��Ķ���.
+  44          // ����: none.
+  45          // �汾: V1.0, 2012-10-22
+  46          //========================================================================
+  47          u8 UART_Configuration(u8 UARTx, COMx_InitDefine *COMx)
+  48          {
+  49   1      #if  defined( UART1 ) || defined( UART2 ) || defined( UART3 ) || defined( UART4 )
+  50   1        u16 i;
+  51   1        u32 j;
+  52   1      #else
+                UARTx = NULL;
+C51 COMPILER V9.60.7.0   STC8G_H_UART                                                      03/01/2025 19:08:13 PAGE 2   
+
+                COMx = NULL;
+              #endif
+  56   1      
+  57   1      #ifdef UART1
+  58   1        if(UARTx == UART1)
+  59   1        {
+  60   2          COM1.TX_send    = 0;
+  61   2          COM1.TX_write   = 0;
+  62   2          COM1.B_TX_busy  = 0;
+  63   2          COM1.RX_Cnt     = 0;
+  64   2          COM1.RX_TimeOut = 0;
+  65   2          
+  66   2          for(i=0; i<COM_TX1_Lenth; i++)  TX1_Buffer[i] = 0;
+  67   2          for(i=0; i<COM_RX1_Lenth; i++)  RX1_Buffer[i] = 0;
+  68   2      
+  69   2          SCON = (SCON & 0x3f) | COMx->UART_Mode; //ģʽ����
+  70   2          if((COMx->UART_Mode == UART_9bit_BRTx) || (COMx->UART_Mode == UART_8bit_BRTx))  //�ɱ䲨����
+  71   2          {
+  72   3            j = (MAIN_Fosc / 4) / COMx->UART_BaudRate;  //��1T����
+  73   3            if(j >= 65536UL)  return FAIL;  //����
+  74   3            j = 65536UL - j;
+  75   3            if(COMx->UART_BRT_Use == BRT_Timer1)
+  76   3            {
+  77   4              TR1 = 0;
+  78   4              AUXR &= ~0x01;    //S1 BRT Use Timer1;
+  79   4              TMOD &= ~(1<<6);  //Timer1 set As Timer
+  80   4              TMOD &= ~0x30;    //Timer1_16bitAutoReload;
+  81   4              AUXR |=  (1<<6);  //Timer1 set as 1T mode
+  82   4              TH1 = (u8)(j>>8);
+  83   4              TL1 = (u8)j;
+  84   4              ET1 = 0;  //��ֹ�ж�
+  85   4              TMOD &= ~0x40;  //��ʱ
+  86   4              INTCLKO &= ~0x02; //�����ʱ��
+  87   4              TR1  = 1;
+  88   4            }
+  89   3            else if(COMx->UART_BRT_Use == BRT_Timer2)
+  90   3            {
+  91   4              AUXR &= ~(1<<4);  //Timer stop
+  92   4              AUXR |= 0x01;   //S1 BRT Use Timer2;
+  93   4              AUXR &= ~(1<<3);  //Timer2 set As Timer
+  94   4              AUXR |=  (1<<2);  //Timer2 set as 1T mode
+  95   4              T2H = (u8)(j>>8);
+  96   4              T2L = (u8)j;
+  97   4              IE2  &= ~(1<<2);  //��ֹ�ж�
+  98   4              AUXR |=  (1<<4);  //Timer run enable
+  99   4            }
+ 100   3            else return FAIL; //����
+ 101   3          }
+ 102   2          else if(COMx->UART_Mode == UART_ShiftRight)
+ 103   2          {
+ 104   3            if(COMx->BaudRateDouble == ENABLE)  AUXR |=  (1<<5);  //�̶�������SysClk/2
+ 105   3            else                AUXR &= ~(1<<5);  //�̶�������SysClk/12
+ 106   3          }
+ 107   2          else if(COMx->UART_Mode == UART_9bit) //�̶�������SysClk*2^SMOD/64
+ 108   2          {
+ 109   3            if(COMx->BaudRateDouble == ENABLE)  PCON |=  (1<<7);  //�̶�������SysClk/32
+ 110   3            else                PCON &= ~(1<<7);  //�̶�������SysClk/64
+ 111   3          }
+ 112   2          UART1_RxEnable(COMx->UART_RxEnable);  //UART����ʹ��
+ 113   2      
+ 114   2          return SUCCESS;
+ 115   2        }
+C51 COMPILER V9.60.7.0   STC8G_H_UART                                                      03/01/2025 19:08:13 PAGE 3   
+
+ 116   1      #endif
+ 117   1      #ifdef UART2
+ 118   1        if(UARTx == UART2)
+ 119   1        {
+ 120   2          COM2.TX_send    = 0;
+ 121   2          COM2.TX_write   = 0;
+ 122   2          COM2.B_TX_busy  = 0;
+ 123   2          COM2.RX_Cnt     = 0;
+ 124   2          COM2.RX_TimeOut = 0;
+ 125   2      
+ 126   2          for(i=0; i<COM_TX2_Lenth; i++)  TX2_Buffer[i] = 0;
+ 127   2          for(i=0; i<COM_RX2_Lenth; i++)  RX2_Buffer[i] = 0;
+ 128   2      
+ 129   2          if((COMx->UART_Mode == UART_9bit_BRTx) ||(COMx->UART_Mode == UART_8bit_BRTx)) //�ɱ䲨����
+ 130   2          {
+ 131   3            if(COMx->UART_Mode == UART_9bit_BRTx) S2CON |=  (1<<7); //9bit
+ 132   3            else                  S2CON &= ~(1<<7); //8bit
+ 133   3            j = (MAIN_Fosc / 4) / COMx->UART_BaudRate;  //��1T����
+ 134   3            if(j >= 65536UL)  return FAIL;  //����
+ 135   3            j = 65536UL - j;
+ 136   3            AUXR &= ~(1<<4);  //Timer stop
+ 137   3            AUXR &= ~(1<<3);  //Timer2 set As Timer
+ 138   3            AUXR |=  (1<<2);  //Timer2 set as 1T mode
+ 139   3            T2H = (u8)(j>>8);
+ 140   3            T2L = (u8)j;
+ 141   3            IE2  &= ~(1<<2);  //��ֹ�ж�
+ 142   3            AUXR |=  (1<<4);  //Timer run enable
+ 143   3          }
+ 144   2          else  return FAIL;  //ģʽ����
+ 145   2          UART2_RxEnable(COMx->UART_RxEnable);  //UART����ʹ��
+ 146   2      
+ 147   2          return SUCCESS;
+ 148   2        }
+ 149   1      #endif
+ 150   1      #ifdef UART3
+ 151   1        if(UARTx == UART3)
+ 152   1        {
+ 153   2          COM3.TX_send    = 0;
+ 154   2          COM3.TX_write   = 0;
+ 155   2          COM3.B_TX_busy  = 0;
+ 156   2          COM3.RX_Cnt     = 0;
+ 157   2          COM3.RX_TimeOut = 0;
+ 158   2          for(i=0; i<COM_TX3_Lenth; i++)  TX3_Buffer[i] = 0;
+ 159   2          for(i=0; i<COM_RX3_Lenth; i++)  RX3_Buffer[i] = 0;
+ 160   2      
+ 161   2          if((COMx->UART_Mode == UART_9bit_BRTx) || (COMx->UART_Mode == UART_8bit_BRTx))  //�ɱ䲨����
+ 162   2          {
+ 163   3            if(COMx->UART_Mode == UART_9bit_BRTx) S3CON |=  (1<<7); //9bit
+ 164   3            else                  S3CON &= ~(1<<7); //8bit
+ 165   3            j = (MAIN_Fosc / 4) / COMx->UART_BaudRate;  //��1T����
+ 166   3            if(j >= 65536UL)  return FAIL;  //����
+ 167   3            j = 65536UL - j;
+ 168   3            if(COMx->UART_BRT_Use == BRT_Timer3)
+ 169   3            {
+ 170   4              S3CON |=  (1<<6);   //S3 BRT Use Timer3;
+ 171   4              T3H = (u8)(j>>8);
+ 172   4              T3L = (u8)j;
+ 173   4              T4T3M &= 0xf0;
+ 174   4              T4T3M |= 0x0a;      //Timer3 set As Timer, 1T mode, Start timer3
+ 175   4            }
+ 176   3            else if(COMx->UART_BRT_Use == BRT_Timer2)
+ 177   3            {
+C51 COMPILER V9.60.7.0   STC8G_H_UART                                                      03/01/2025 19:08:13 PAGE 4   
+
+ 178   4              AUXR &= ~(1<<4);    //Timer stop
+ 179   4              S3CON &= ~(1<<6);   //S3 BRT Use Timer2;
+ 180   4              AUXR &= ~(1<<3);    //Timer2 set As Timer
+ 181   4              AUXR |=  (1<<2);    //Timer2 set as 1T mode
+ 182   4              T2H = (u8)(j>>8);
+ 183   4              T2L = (u8)j;
+ 184   4              IE2  &= ~(1<<2);  //��ֹ�ж�
+ 185   4              AUXR |=  (1<<4);  //Timer run enable
+ 186   4            }
+ 187   3            else return FAIL; //����
+ 188   3          }
+ 189   2          else  return FAIL;  //ģʽ����
+ 190   2          UART3_RxEnable(COMx->UART_RxEnable);  //UART����ʹ��
+ 191   2      
+ 192   2          return SUCCESS;
+ 193   2        }
+ 194   1      #endif
+ 195   1      #ifdef UART4
+ 196   1        if(UARTx == UART4)
+ 197   1        {
+ 198   2          COM4.TX_send    = 0;
+ 199   2          COM4.TX_write   = 0;
+ 200   2          COM4.B_TX_busy  = 0;
+ 201   2          COM4.RX_Cnt     = 0;
+ 202   2          COM4.RX_TimeOut = 0;
+ 203   2          for(i=0; i<COM_TX4_Lenth; i++)  TX4_Buffer[i] = 0;
+ 204   2          for(i=0; i<COM_RX4_Lenth; i++)  RX4_Buffer[i] = 0;
+ 205   2      
+ 206   2          if((COMx->UART_Mode == UART_9bit_BRTx) || (COMx->UART_Mode == UART_8bit_BRTx))  //�ɱ䲨����
+ 207   2          {
+ 208   3            if(COMx->UART_Mode == UART_9bit_BRTx) S4CON |=  (1<<7); //9bit
+ 209   3            else                  S4CON &= ~(1<<7); //8bit
+ 210   3            j = (MAIN_Fosc / 4) / COMx->UART_BaudRate;  //��1T����
+ 211   3            if(j >= 65536UL)  return FAIL;  //����
+ 212   3            j = 65536UL - j;
+ 213   3            if(COMx->UART_BRT_Use == BRT_Timer4)
+ 214   3            {
+ 215   4              S4CON |=  (1<<6);   //S4 BRT Use Timer4;
+ 216   4              T4H = (u8)(j>>8);
+ 217   4              T4L = (u8)j;
+ 218   4              T4T3M &= 0x0f;
+ 219   4              T4T3M |= 0xa0;      //Timer4 set As Timer, 1T mode, Start timer4
+ 220   4            }
+ 221   3            else if(COMx->UART_BRT_Use == BRT_Timer2)
+ 222   3            {
+ 223   4              AUXR &= ~(1<<4);    //Timer stop
+ 224   4              S4CON &= ~(1<<6);   //S4 BRT Use Timer2;
+ 225   4              AUXR &= ~(1<<3);    //Timer2 set As Timer
+ 226   4              AUXR |=  (1<<2);    //Timer2 set as 1T mode
+ 227   4              T2H = (u8)(j>>8);
+ 228   4              T2L = (u8)j;
+ 229   4              IE2  &= ~(1<<2);  //��ֹ�ж�
+ 230   4              AUXR |=  (1<<4);  //Timer run enable
+ 231   4            }
+ 232   3            else return FAIL; //����
+ 233   3          }
+ 234   2          else  return FAIL;  //ģʽ����
+ 235   2          UART4_RxEnable(COMx->UART_RxEnable);  //UART����ʹ��
+ 236   2          
+ 237   2          return SUCCESS;
+ 238   2        }
+ 239   1      #endif
+C51 COMPILER V9.60.7.0   STC8G_H_UART                                                      03/01/2025 19:08:13 PAGE 5   
+
+ 240   1        return FAIL;  //����
+ 241   1      }
+ 242          
+ 243          /*********************************************************/
+ 244          
+ 245          /********************* UART1 ���� ************************/
+ 246          #ifdef UART1
+ 247          void TX1_write2buff(u8 dat) //����1���ͺ���
+ 248          {
+ 249   1          #if(UART_QUEUE_MODE == 1)
+                TX1_Buffer[COM1.TX_write] = dat;  //װ���ͻ��壬ʹ�ö���ʽ���ݷ��ͣ�һ��
+             -�Է������ݳ��Ȳ�Ҫ������������С��COM_TXn_Lenth��
+                if(++COM1.TX_write >= COM_TX1_Lenth)  COM1.TX_write = 0;
+              
+                if(COM1.B_TX_busy == 0)   //����
+                {  
+                  COM1.B_TX_busy = 1;   //��־æ
+                  TI = 1;         //���������ж�
+                }
+                  #else
+ 259   1          //������������ʽ���ͷ���
+ 260   1        SBUF = dat;
+ 261   1        COM1.B_TX_busy = 1;   //��־æ
+ 262   1        while(COM1.B_TX_busy);
+ 263   1          #endif
+ 264   1      }
+ 265          
+ 266          void PrintString1(u8 *puts)
+ 267          {
+ 268   1          for (; *puts != 0;  puts++)  TX1_write2buff(*puts);   //����ֹͣ��0����
+ 269   1      }
+ 270          
+ 271          #endif
+ 272          
+ 273          /********************* UART2 ���� ************************/
+ 274          #ifdef UART2
+ 275          void TX2_write2buff(u8 dat) //����2���ͺ���
+ 276          {
+ 277   1          #if(UART_QUEUE_MODE == 1)
+                TX2_Buffer[COM2.TX_write] = dat;  //װ���ͻ��壬ʹ�ö���ʽ���ݷ��ͣ�һ��
+             -�Է������ݳ��Ȳ�Ҫ������������С��COM_TXn_Lenth��
+                if(++COM2.TX_write >= COM_TX2_Lenth)  COM2.TX_write = 0;
+              
+                if(COM2.B_TX_busy == 0)   //����
+                {  
+                  COM2.B_TX_busy = 1;   //��־æ
+                  SET_TI2();        //���������ж�
+                }
+                  #else
+ 287   1          //������������ʽ���ͷ���
+ 288   1        S2BUF = dat;
+ 289   1        COM2.B_TX_busy = 1;   //��־æ
+ 290   1        while(COM2.B_TX_busy);
+ 291   1          #endif
+ 292   1      }
+ 293          
+ 294          void PrintString2(u8 *puts)
+ 295          {
+ 296   1          for (; *puts != 0;  puts++)  TX2_write2buff(*puts);   //����ֹͣ��0����
+ 297   1      }
+ 298          
+ 299          #endif
+C51 COMPILER V9.60.7.0   STC8G_H_UART                                                      03/01/2025 19:08:13 PAGE 6   
+
+ 300          
+ 301          /********************* UART3 ���� ************************/
+ 302          #ifdef UART3
+ 303          void TX3_write2buff(u8 dat) //����3���ͺ���
+ 304          {
+ 305   1          #if(UART_QUEUE_MODE == 1)
+                TX3_Buffer[COM3.TX_write] = dat;  //װ���ͻ��壬ʹ�ö���ʽ���ݷ��ͣ�һ��
+             -�Է������ݳ��Ȳ�Ҫ������������С��COM_TXn_Lenth��
+                if(++COM3.TX_write >= COM_TX3_Lenth)  COM3.TX_write = 0;
+              
+                if(COM3.B_TX_busy == 0)   //����
+                {  
+                  COM3.B_TX_busy = 1;   //��־æ
+                  SET_TI3();        //���������ж�
+                }
+                  #else
+ 315   1          //������������ʽ���ͷ���
+ 316   1        S3BUF = dat;
+ 317   1        COM3.B_TX_busy = 1;   //��־æ
+ 318   1        while(COM3.B_TX_busy);
+ 319   1          #endif
+ 320   1      }
+ 321          
+ 322          void PrintString3(u8 *puts)
+ 323          {
+ 324   1          for (; *puts != 0;  puts++)  TX3_write2buff(*puts);   //����ֹͣ��0����
+ 325   1      }
+ 326          
+ 327          #endif
+ 328          
+ 329          /********************* UART4 ���� ************************/
+ 330          #ifdef UART4
+ 331          void TX4_write2buff(u8 dat) //����4���ͺ���
+ 332          {
+ 333   1          #if(UART_QUEUE_MODE == 1)
+                TX4_Buffer[COM4.TX_write] = dat;  //װ���ͻ��壬ʹ�ö���ʽ���ݷ��ͣ�һ��
+             -�Է������ݳ��Ȳ�Ҫ������������С��COM_TXn_Lenth��
+                if(++COM4.TX_write >= COM_TX4_Lenth)  COM4.TX_write = 0;
+              
+                if(COM4.B_TX_busy == 0)   //����
+                {  
+                  COM4.B_TX_busy = 1;   //��־æ
+                  SET_TI4();        //���������ж�
+                }
+                  #else
+ 343   1          //������������ʽ���ͷ���
+ 344   1        S4BUF = dat;
+ 345   1        COM4.B_TX_busy = 1;   //��־æ
+ 346   1        while(COM4.B_TX_busy);
+ 347   1          #endif
+ 348   1      }
+ 349          
+ 350          void PrintString4(u8 *puts)
+ 351          {
+ 352   1          for (; *puts != 0;  puts++)  TX4_write2buff(*puts);   //����ֹͣ��0����
+ 353   1      }
+ 354          
+ 355          #endif
+ 356          
+ 357          /*********************************************************/
+ 358          /*
+ 359          void COMx_write2buff(u8 UARTx, u8 dat)  //UART1/UART2/UART3/UART4
+C51 COMPILER V9.60.7.0   STC8G_H_UART                                                      03/01/2025 19:08:13 PAGE 7   
+
+ 360          {
+ 361            if(UARTx == UART1)  TX1_write2buff(dat);
+ 362            if(UARTx == UART2)  TX2_write2buff(dat);
+ 363            if(UARTx == UART3)  TX3_write2buff(dat);
+ 364            if(UARTx == UART4)  TX4_write2buff(dat);
+ 365          }
+ 366          
+ 367          void PrintString(u8 UARTx, u8 *puts)
+ 368          {
+ 369              for (; *puts != 0;  puts++)  COMx_write2buff(UARTx,*puts);  //����ֹͣ��0����
+ 370          }
+ 371          */
+ 372          
+ 373          /********************* Printf ���� ************************/
+ 374          #if(PRINTF_SELECT == 1)
+ 375          
+ 376          char putchar(u8 c)
+ 377          {
+ 378   1        TX1_write2buff(c);
+ 379   1        return c;
+ 380   1      }
+ 381          
+ 382          #elif(PRINTF_SELECT == 2)
+              
+              char putchar(u8 c)
+              {
+                TX2_write2buff(c);
+                return c;
+              }
+              
+              #elif(PRINTF_SELECT == 3)
+              
+              char putchar(u8 c)
+              {
+                TX3_write2buff(c);
+                return c;
+              }
+              
+              #elif(PRINTF_SELECT == 4)
+              
+              char putchar(u8 c)
+              {
+                TX4_write2buff(c);
+                return c;
+              }
+              
+              #endif
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =   1363    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =    704    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =     20      10
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+   EDATA SIZE       =   ----    ----
+   HDATA SIZE       =   ----    ----
+   XDATA CONST SIZE =   ----    ----
+   FAR CONST SIZE   =   ----    ----
+END OF MODULE INFORMATION.
+
+C51 COMPILER V9.60.7.0   STC8G_H_UART                                                      03/01/2025 19:08:13 PAGE 8   
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)
