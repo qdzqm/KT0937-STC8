@@ -1,0 +1,105 @@
+C51 COMPILER V9.60.7.0   STC8G_H_I2C_ISR                                                   03/09/2025 21:38:48 PAGE 1   
+
+
+C51 COMPILER V9.60.7.0, COMPILATION OF MODULE STC8G_H_I2C_ISR
+OBJECT MODULE PLACED IN .\Objects\STC8G_H_I2C_Isr.obj
+COMPILER INVOKED BY: C:\Keil_v5\C51\BIN\C51.EXE src\STC8G_H_I2C_Isr.c ROM(COMPACT) OPTIMIZE(8,SIZE) BROWSE DEBUG OBJECTE
+                    -XTEND PRINT(.\Listings\STC8G_H_I2C_Isr.lst) TABS(2) OBJECT(.\Objects\STC8G_H_I2C_Isr.obj)
+
+line level    source
+
+   1          /*---------------------------------------------------------------------*/
+   2          /* --- STC MCU Limited ------------------------------------------------*/
+   3          /* --- STC 1T Series MCU Demo Programme -------------------------------*/
+   4          /* --- Mobile: (86)13922805190 ----------------------------------------*/
+   5          /* --- Fax: 86-0513-55012956,55012947,55012969 ------------------------*/
+   6          /* --- Tel: 86-0513-55012928,55012929,55012966 ------------------------*/
+   7          /* --- Web: www.STCAI.com ---------------------------------------------*/
+   8          /* --- BBS: www.STCAIMCU.com  -----------------------------------------*/
+   9          /* --- QQ:  800003751 -------------------------------------------------*/
+  10          /* 如果要在程序中使用此代码,请在程序中注明使用了STC的资料及程序            */
+  11          /*---------------------------------------------------------------------*/
+  12          
+  13          #include  "include/STC8G_H_I2C.h"
+  14          
+  15          //========================================================================
+  16          //                               本地变量声明
+  17          //========================================================================
+  18          
+  19          I2C_IsrTypeDef I2CIsr;
+  20          bit DisplayFlag;
+  21          
+  22          //========================================================================
+  23          //                            外部函数和变量声明
+  24          //========================================================================
+  25          
+  26          
+  27          //========================================================================
+  28          // 函数: I2C_ISR_Handler
+  29          // 描述: I2C中断函数.
+  30          // 参数: none.
+  31          // 返回: none.
+  32          // 版本: V1.0, 2020-09-23
+  33          //========================================================================
+  34          void I2C_ISR_Handler() interrupt I2C_VECTOR
+  35          {
+  36   1        // TODO: 在此处添加用户代码
+  37   1        if (I2CSLST & 0x40)
+  38   1        {
+  39   2          I2CSLST &= ~0x40;                       //处理START事件
+  40   2        }
+  41   1        else if (I2CSLST & 0x20)
+  42   1        {
+  43   2          I2CSLST &= ~0x20;                       //处理RECV事件，SLACKO设置为0
+  44   2          if (I2CIsr.isda)
+  45   2          {
+  46   3            I2CIsr.isda = 0;                           //处理RECV事件（RECV DEVICE ADDR）
+  47   3          }
+  48   2          else if (I2CIsr.isma)
+  49   2          {
+  50   3            I2CIsr.isma = 0;                           //处理RECV事件（RECV MEMORY ADDR）
+  51   3            I2CIsr.addr = I2CRXD;
+  52   3            I2CTXD = I2C_Buffer[I2CIsr.addr];
+  53   3          }
+  54   2          else
+C51 COMPILER V9.60.7.0   STC8G_H_I2C_ISR                                                   03/09/2025 21:38:48 PAGE 2   
+
+  55   2          {
+  56   3            I2C_Buffer[I2CIsr.addr++] = I2CRXD;            //处理RECV事件（RECV DATA）
+  57   3          }
+  58   2        }
+  59   1        else if (I2CSLST & 0x10)
+  60   1        {
+  61   2          I2CSLST &= ~0x10;                       //处理SEND事件
+  62   2          if (I2CSLST & 0x02)
+  63   2          {
+  64   3            I2CTXD = 0xff;
+  65   3          }
+  66   2          else
+  67   2          {
+  68   3            I2CTXD = I2C_Buffer[++I2CIsr.addr];
+  69   3          }
+  70   2        }
+  71   1        else if (I2CSLST & 0x08)
+  72   1        {
+  73   2          I2CSLST &= ~0x08;                       //处理STOP事件
+  74   2          I2CIsr.isda = 1;
+  75   2          I2CIsr.isma = 1;
+  76   2          DisplayFlag = 1;
+  77   2        }
+  78   1      }
+  79          
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    163    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =      3    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =      1    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

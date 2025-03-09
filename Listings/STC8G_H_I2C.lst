@@ -1,0 +1,541 @@
+C51 COMPILER V9.60.7.0   STC8G_H_I2C                                                       03/09/2025 21:38:48 PAGE 1   
+
+
+C51 COMPILER V9.60.7.0, COMPILATION OF MODULE STC8G_H_I2C
+OBJECT MODULE PLACED IN .\Objects\STC8G_H_I2C.obj
+COMPILER INVOKED BY: C:\Keil_v5\C51\BIN\C51.EXE src\STC8G_H_I2C.c ROM(COMPACT) OPTIMIZE(8,SIZE) BROWSE DEBUG OBJECTEXTEN
+                    -D PRINT(.\Listings\STC8G_H_I2C.lst) TABS(2) OBJECT(.\Objects\STC8G_H_I2C.obj)
+
+line level    source
+
+   1          /*---------------------------------------------------------------------*/
+   2          /* --- STC MCU Limited ------------------------------------------------*/
+   3          /* --- STC 1T Series MCU Demo Programme -------------------------------*/
+   4          /* --- Mobile: (86)13922805190 ----------------------------------------*/
+   5          /* --- Fax: 86-0513-55012956,55012947,55012969 ------------------------*/
+   6          /* --- Tel: 86-0513-55012928,55012929,55012966 ------------------------*/
+   7          /* --- Web: www.STCAI.com ---------------------------------------------*/
+   8          /* --- BBS: www.STCAIMCU.com  -----------------------------------------*/
+   9          /* --- QQ:  800003751 -------------------------------------------------*/
+  10          /* 如果要在程序中使用此代码,请在程序中注明使用了STC的资料及程序            */
+  11          /*---------------------------------------------------------------------*/
+  12          /*这个函数被修改过了，增加了OLED相关的函数*/
+  13          #include  "include/STC8G_H_I2C.h"
+  14          #include  "include/OLEDFont.h"
+  15          #include  "string.h"
+  16          
+  17          u8 xdata I2C_Buffer[I2C_BUF_LENTH];
+  18          
+  19          #define SLAW    0x6A
+  20          #define SLAR    0x6B
+  21          
+  22          //========================================================================
+  23          // 函数: void I2C_Init(I2C_InitTypeDef *I2Cx)
+  24          // 描述: I2C初始化程序.
+  25          // 参数: I2Cx: 结构参数,请参考I2C.h里的定义.
+  26          // 返回: none.
+  27          // 版本: V1.0, 2012-11-22
+  28          //========================================================================
+  29          void I2C_Init(I2C_InitTypeDef *I2Cx)
+  30          {
+  31   1        if(I2Cx->I2C_Mode == I2C_Mode_Master)
+  32   1        {
+  33   2          I2C_Master();     //设为主机  
+  34   2          I2CMSST = 0x00;   //清除I2C主机状态寄存器
+  35   2          I2C_SetSpeed(I2Cx->I2C_Speed);
+  36   2          if(I2Cx->I2C_MS_WDTA == ENABLE)   I2C_WDTA_EN();  //使能自动发送
+  37   2          else                  I2C_WDTA_DIS(); //禁止自动发送
+  38   2        }
+  39   1        else
+  40   1        {
+  41   2          I2C_Slave();  //设为从机
+  42   2          I2CSLST = 0x00;   //清除I2C从机状态寄存器
+  43   2          I2C_Address(I2Cx->I2C_SL_ADR);
+  44   2          if(I2Cx->I2C_SL_MA == ENABLE)   I2C_MATCH_EN(); //从机地址比较功能，只接受相匹配地址
+  45   2          else                  I2C_MATCH_DIS();  //禁止从机地址比较功能，接受所有设备地址
+  46   2        }
+  47   1        
+  48   1        I2C_Function(I2Cx->I2C_Enable);
+  49   1      }
+  50          
+  51          //========================================================================
+  52          // 函数: u8 Get_MSBusy_Status (void)
+  53          // 描述: 获取主机忙碌状态.
+  54          // 参数: none.
+C51 COMPILER V9.60.7.0   STC8G_H_I2C                                                       03/09/2025 21:38:48 PAGE 2   
+
+  55          // 返回: 主机忙碌状态.
+  56          // 版本: V1.0, 2012-11-22
+  57          //========================================================================
+  58          u8 Get_MSBusy_Status(void)
+  59          {
+  60   1        return (I2CMSST & 0x80);
+  61   1      }
+  62          
+  63          //========================================================================
+  64          // 函数: void Wait (void)
+  65          // 描述: 等待主机模式I2C控制器执行完成I2CMSCR.
+  66          // 参数: none.
+  67          // 返回: none.
+  68          // 版本: V1.0, 2012-11-22
+  69          //========================================================================
+  70          void Wait()
+  71          {
+  72   1        while (!(I2CMSST & 0x40));
+  73   1        I2CMSST &= ~0x40;
+  74   1      }
+  75          
+  76          //========================================================================
+  77          // 函数: void Start (void)
+  78          // 描述: I2C总线起始函数.
+  79          // 参数: none.
+  80          // 返回: none.
+  81          // 版本: V1.0, 2020-09-15
+  82          //========================================================================
+  83          void Start()
+  84          {
+  85   1        I2CMSCR = 0x01;                         //发送START命令
+  86   1        Wait();
+  87   1      }
+  88          
+  89          //========================================================================
+  90          // 函数: void SendData (u8 dat)
+  91          // 描述: I2C发送一个字节数据函数.
+  92          // 参数: 发送的数据.
+  93          // 返回: none.
+  94          // 版本: V1.0, 2020-09-15
+  95          //========================================================================
+  96          void SendData(u8 dat)
+  97          {
+  98   1        I2CTXD = dat;                           //写数据到数据缓冲区
+  99   1        I2CMSCR = 0x02;                         //发送SEND命令
+ 100   1        Wait();
+ 101   1      }
+ 102          
+ 103          //========================================================================
+ 104          // 函数: void RecvACK (void)
+ 105          // 描述: I2C获取ACK函数.
+ 106          // 参数: none.
+ 107          // 返回: none.
+ 108          // 版本: V1.0, 2020-09-15
+ 109          //========================================================================
+ 110          void RecvACK()
+ 111          {
+ 112   1        I2CMSCR = 0x03;                         //发送读ACK命令
+ 113   1        Wait();
+ 114   1      }
+ 115          
+ 116          //========================================================================
+C51 COMPILER V9.60.7.0   STC8G_H_I2C                                                       03/09/2025 21:38:48 PAGE 3   
+
+ 117          // 函数: char RecvData (void)
+ 118          // 描述: I2C读取一个字节数据函数.
+ 119          // 参数: none.
+ 120          // 返回: 读取数据.
+ 121          // 版本: V1.0, 2020-09-15
+ 122          //========================================================================
+ 123          char RecvData()
+ 124          {
+ 125   1        I2CMSCR = 0x04;                         //发送RECV命令
+ 126   1        Wait();
+ 127   1        return I2CRXD;
+ 128   1      }
+ 129          
+ 130          //========================================================================
+ 131          // 函数: void SendACK (void)
+ 132          // 描述: I2C发送ACK函数.
+ 133          // 参数: none.
+ 134          // 返回: none.
+ 135          // 版本: V1.0, 2020-09-15
+ 136          //========================================================================
+ 137          void SendACK()
+ 138          {
+ 139   1        I2CMSST = 0x00;                         //设置ACK信号
+ 140   1        I2CMSCR = 0x05;                         //发送ACK命令
+ 141   1        Wait();
+ 142   1      }
+ 143          
+ 144          //========================================================================
+ 145          // 函数: void SendNAK (void)
+ 146          // 描述: I2C发送NAK函数.
+ 147          // 参数: none.
+ 148          // 返回: none.
+ 149          // 版本: V1.0, 2020-09-15
+ 150          //========================================================================
+ 151          void SendNAK()
+ 152          {
+ 153   1        I2CMSST = 0x01;                         //设置NAK信号
+ 154   1        I2CMSCR = 0x05;                         //发送ACK命令
+ 155   1        Wait();
+ 156   1      }
+ 157          
+ 158          //========================================================================
+ 159          // 函数: void Stop (void)
+ 160          // 描述: I2C总线停止函数.
+ 161          // 参数: none.
+ 162          // 返回: none.
+ 163          // 版本: V1.0, 2020-09-15
+ 164          //========================================================================
+ 165          void Stop()
+ 166          {
+ 167   1        I2CMSCR = 0x06;                         //发送STOP命令
+ 168   1        Wait();
+ 169   1      }
+ 170          
+ 171          //========================================================================
+ 172          // 函数: void SendCmdData (u8 cmd, u8 dat)
+ 173          // 描述: I2C发送一个字节数据函数.
+ 174          // 参数: 命令/数据.
+ 175          // 返回: none.
+ 176          // 版本: V1.0, 2020-09-15
+ 177          //========================================================================
+ 178          void SendCmdData(u8 cmd, u8 dat)
+C51 COMPILER V9.60.7.0   STC8G_H_I2C                                                       03/09/2025 21:38:48 PAGE 4   
+
+ 179          {
+ 180   1        I2CTXD = dat;                           //写数据到数据缓冲区
+ 181   1        I2CMSCR = cmd;                          //设置命令
+ 182   1        Wait();
+ 183   1      }
+ 184          
+ 185          //========================================================================
+ 186          // 函数: void I2C_WriteNbyte(u8 dev_addr, u8 mem_addr, u8 *p, u8 number)
+ 187          // 描述: I2C写入数据函数.
+ 188          // 参数: dev_addr: 设备地址, mem_addr: 存储地址, *p写入数据存储位置, number写入数据个数.
+ 189          // 返回: none.
+ 190          // 版本: V1.0, 2020-09-15
+ 191          //========================================================================
+ 192          void I2C_Writebyte(u8 dev_addr, u8 mem_addr, u8 *p)  /*  DeviceAddress,WordAddress,First Data Address,Byte
+             - lenth   */
+ 193          {
+ 194   1        Start();                                //发送起始命令
+ 195   1        SendData(dev_addr);                     //发送设备地址+写命令
+ 196   1        RecvACK();
+ 197   1        SendData(mem_addr);                     //发送存储地址
+ 198   1        RecvACK();
+ 199   1        SendData(*p);
+ 200   1        RecvACK();
+ 201   1        Stop();                                 //发送停止命令
+ 202   1      }
+ 203          
+ 204          //========================================================================
+ 205          // 函数: void I2C_ReadNbyte(u8 dev_addr, u8 mem_addr, u8 *p, u8 number)
+ 206          // 描述: I2C读取数据函数.
+ 207          // 参数: dev_addr: 设备地址, mem_addr: 存储地址, *p读取数据存储位置, number读取数据个数.
+ 208          // 返回: none.
+ 209          // 版本: V1.0, 2020-09-15
+ 210          //========================================================================
+ 211          void I2C_Readbyte(u8 dev_addr, u8 mem_addr, u8 *p)   /*  DeviceAddress,WordAddress,First Data Address,Byte
+             - lenth   */
+ 212          {
+ 213   1        Start();                                //发送起始命令
+ 214   1        SendData(dev_addr);                     //发送设备地址+写命令
+ 215   1        RecvACK();
+ 216   1        SendData(mem_addr);                     //发送存储地址
+ 217   1        RecvACK();
+ 218   1        Start();
+ 219   1        SendData(dev_addr|1);                   //发送设备地址+读命令
+ 220   1        RecvACK();
+ 221   1        *p = RecvData();
+ 222   1        SendNAK();                              //send no ACK 
+ 223   1        Stop();                                 //发送停止命令
+ 224   1      }
+ 225          //========================================================================
+ 226          // 函数: 
+ 227          // 描述: 
+ 228          // 参数: 
+ 229          // 返回: 
+ 230          // 版本: 
+ 231          //========================================================================
+ 232          void Oled_Write_Cmd(u8 Comd)  /* 向OLED 写入命令 */
+ 233          {
+ 234   1        Start();  SendData(0x78); //驱动地址 0x78
+ 235   1        RecvACK();  SendData(0x00); // 发送的只为字节D/C=000 0000为命令
+ 236   1        RecvACK();  SendData(Comd);
+ 237   1        RecvACK();
+ 238   1        Stop();
+C51 COMPILER V9.60.7.0   STC8G_H_I2C                                                       03/09/2025 21:38:48 PAGE 5   
+
+ 239   1      }
+ 240          //========================================================================
+ 241          // 函数: 
+ 242          // 描述: 
+ 243          // 参数: 
+ 244          // 返回: 
+ 245          // 版本: 
+ 246          //======================================================================== 
+ 247          void Oled_Write_Data(u8 Data)   /* 向OLED 写入数据 */
+ 248          {
+ 249   1        Start();    SendData(0x78); //驱动地址 0x78
+ 250   1        RecvACK();  SendData(0x40); // 发送的只为字节D/C=100 0000为数据
+ 251   1        RecvACK();  SendData(Data);
+ 252   1        RecvACK();
+ 253   1        Stop();
+ 254   1      }
+ 255          //========================================================================
+ 256          // 函数: 
+ 257          // 描述: 
+ 258          // 参数: 
+ 259          // 返回: 
+ 260          // 版本: 
+ 261          //========================================================================
+ 262          /* 坐标设置函数 */ 
+ 263          void OLED_Set_Points(u8 x, u8 y) 
+ 264          {   
+ 265   1        Oled_Write_Cmd(0xb0+y);
+ 266   1        Oled_Write_Cmd(((x&0xf0)>>4)|0x10);
+ 267   1        Oled_Write_Cmd((x&0x0f)); 
+ 268   1      }       
+ 269          //========================================================================
+ 270          // 函数: 
+ 271          // 描述: 
+ 272          // 参数: 
+ 273          // 返回: 
+ 274          // 版本: 
+ 275          //======================================================================== 
+ 276          /* 清屏函数 */  
+ 277          void OLED_Clear(void)  
+ 278          {  
+ 279   1        u8 i,n;       
+ 280   1        for(i=0;i<8;i++)  
+ 281   1        {  
+ 282   2          Oled_Write_Cmd(0xb0+i);    //设置页地址（0~3）
+ 283   2          Oled_Write_Cmd(0x00);      //设置显示位置—列低地址
+ 284   2          Oled_Write_Cmd(0x10);      //设置显示位置—列高地址   
+ 285   2          for(n=0;n<128;n++)    Oled_Write_Data(0);
+ 286   2        } 
+ 287   1      }
+ 288          //========================================================================
+ 289          // 函数: 
+ 290          // 描述: 
+ 291          // 参数: 
+ 292          // 返回: 
+ 293          // 版本: 
+ 294          //========================================================================
+ 295          void OLED_ShowPx(u8 x,u8 y)
+ 296          {       
+ 297   1        u8 c=0,i=0; 
+ 298   1      //  c = car-' ';   //偏移后的值     
+ 299   1        if(x>128-1)  {x=0;y=y+2;}
+ 300   1      
+C51 COMPILER V9.60.7.0   STC8G_H_I2C                                                       03/09/2025 21:38:48 PAGE 6   
+
+ 301   1          OLED_Set_Points(x,y);
+ 302   1          Oled_Write_Data(0x55);
+ 303   1      
+ 304   1      
+ 305   1      }
+ 306          //========================================================================
+ 307          // 函数: 
+ 308          // 描述: 
+ 309          // 参数: 
+ 310          // 返回: 
+ 311          // 版本: 
+ 312          //========================================================================
+ 313             /* 显示字符          列     行  字符内容       哪个数组 */
+ 314          void OLED_ShowChar(u8 x,u8 y,u8 car,u8 Char_Size)
+ 315          {   
+ 316   1        u8 c=0,i=0; 
+ 317   1        c = car-' ';   //偏移后的值     
+ 318   1        if(x>128-1)  {x=0;y=y+2;}
+ 319   1        if(Char_Size ==16)
+ 320   1          {
+ 321   2            OLED_Set_Points(x,y); 
+ 322   2            for(i=0;i<8;i++)
+ 323   2              { Oled_Write_Data(F8X16[c*16+i]); }
+ 324   2            OLED_Set_Points(x,y+1);
+ 325   2            for(i=0;i<8;i++)
+ 326   2              { Oled_Write_Data(F8X16[c*16+i+8]); }
+ 327   2          }
+ 328   1        else 
+ 329   1          { 
+ 330   2            OLED_Set_Points(x,y);
+ 331   2            for(i=0;i<6;i++)
+ 332   2              { Oled_Write_Data(F6x8[c][i]);  }
+ 333   2          }
+ 334   1      }
+ 335          //========================================================================
+ 336          // 函数: 
+ 337          // 描述: 
+ 338          // 参数: 
+ 339          // 返回: 
+ 340          // 版本: 
+ 341          //========================================================================
+ 342            /* 字符串形式显示字符   列      行  指针-字符串    哪个数组 */
+ 343          void OLED_ShowString(u8 x,u8 y,u8 *chr,u8 Char_Size)
+ 344          {
+ 345   1        u8 j;
+ 346   1        for(j=0;j<strlen(chr);j++)
+ 347   1         {    
+ 348   2           OLED_ShowChar(x,y,chr[j],Char_Size);
+ 349   2            x+=6;
+ 350   2          if(x>120) {x=0;y+=2;}
+ 351   2         }
+ 352   1      }
+ 353          //========================================================================
+ 354          // 函数: 
+ 355          // 描述: 
+ 356          // 参数: 
+ 357          // 返回: 
+ 358          // 版本: 
+ 359          //======================================================================== 
+ 360          u16 oled_pow(u8 m,u8 n)
+ 361          {
+ 362   1        u16 result=1;  
+C51 COMPILER V9.60.7.0   STC8G_H_I2C                                                       03/09/2025 21:38:48 PAGE 7   
+
+ 363   1        while(n--)result*=m;    
+ 364   1        return result;
+ 365   1      }     
+ 366           //========================================================================
+ 367          // 函数: 
+ 368          // 描述: 
+ 369          // 参数: 
+ 370          // 返回: 
+ 371          // 版本: 
+ 372          //========================================================================
+ 373            /* 显示变量数字      列    行   变量内容  字符长度   字符大小16或8  */
+ 374          void OLED_ShowNum(u8 x,u8 y,u16 num,u8 len,u8 num_size)
+ 375          {           
+ 376   1        u8 t,temp,enshow=0;
+ 377   1        for(t=0;t<len;t++)
+ 378   1         {
+ 379   2          temp=(num/oled_pow(10,len-t-1))%10;
+ 380   2          if(enshow==0&&t<(len-1))
+ 381   2           {
+ 382   3            if(temp==0)
+ 383   3            {
+ 384   4              if(num_size == 8) OLED_ShowChar(x+(num_size/2+2)*t,y,' ',num_size);   
+ 385   4              else if(num_size == 16) OLED_ShowChar(x+(num_size/2)*t,y,' ',num_size);  
+ 386   4              continue;
+ 387   4            }else enshow=1; 
+ 388   3          }
+ 389   2         if(num_size == 8)  OLED_ShowChar(x+(num_size/2+2)*t,y,temp+'0',num_size);       
+ 390   2         else if(num_size == 16)  OLED_ShowChar(x+(num_size/2)*t,y,temp+'0',num_size);  
+ 391   2        }
+ 392   1      } 
+ 393           //========================================================================
+ 394          // 函数: 
+ 395          // 描述: 
+ 396          // 参数: 
+ 397          // 返回: 
+ 398          // 版本: 
+ 399          //========================================================================
+ 400            /* 显示变量数字      列    行   变量内容  字符长度   字符大小16或8  */
+ 401          void OLED_ShowSignal(u8 x, u8 y, u8 signal, u8 *l)
+ 402          {
+ 403   1          u8 i=0;
+ 404   1        OLED_Set_Points(x, y); // 设置起点
+ 405   1        for(i=0;i<*l;i++) 
+ 406   1        {
+ 407   2          Oled_Write_Data(0x00); 
+ 408   2        }
+ 409   1        OLED_Set_Points(x, y); // 设置起点
+ 410   1          for(i=0;i<signal;i++) 
+ 411   1        {
+ 412   2          Oled_Write_Data(0x18); 
+ 413   2        }
+ 414   1        *l = signal;
+ 415   1      }
+ 416          //========================================================================
+ 417          // 函数: 
+ 418          // 描述: 
+ 419          // 参数: 
+ 420          // 返回: 
+ 421          // 版本: 
+ 422          //========================================================================
+ 423          /* OLED12864 屏幕初始化 */
+ 424          
+C51 COMPILER V9.60.7.0   STC8G_H_I2C                                                       03/09/2025 21:38:48 PAGE 8   
+
+ 425          void OLED_Init(void)
+ 426          { 
+ 427   1        Oled_Write_Cmd(0xAE); //关闭显示display off
+ 428   1        Oled_Write_Cmd(0x20); //Set Memory Addressing Mode  
+ 429   1        Oled_Write_Cmd(0x10); //00,Horizontal Addressing Mode;01,Vertical Addressing Mode;10,Page Addressing Mode
+             - (RESET,OLED_CMD);11,Invalid
+ 430   1        Oled_Write_Cmd(0xb0); //Set Page Start Address for Page Addressing Mode,0-7
+ 431   1        Oled_Write_Cmd(0xc8); //Set COM Output Scan Direction
+ 432   1        Oled_Write_Cmd(0x02); //-设置低位列地址set low column address 注意：0.96屏幕从0x00开始写数据，1.3寸屏幕从
+             -0x02开始写数据
+ 433   1        Oled_Write_Cmd(0x10); //-设置高位列地址set high column address
+ 434   1        Oled_Write_Cmd(0x40); //--set start line address
+ 435   1        Oled_Write_Cmd(0x81); //--set contrast control register
+ 436   1        Oled_Write_Cmd(0xff); //亮度调节 0x00~0xff
+ 437   1        Oled_Write_Cmd(0xa1); //--set segment re-map 0 to 127
+ 438   1        Oled_Write_Cmd(0xa6); //--set normal display
+ 439   1        Oled_Write_Cmd(0xa8); //--set multiplex ratio(1 to 64,OLED_CMD)
+ 440   1        Oled_Write_Cmd(0x3F); //
+ 441   1        Oled_Write_Cmd(0xa4); //0xa4,Output follows RAM content;0xa5,Output ignores RAM content
+ 442   1        Oled_Write_Cmd(0xd3); //-设置显示偏移set display offset
+ 443   1        Oled_Write_Cmd(0x00); //-没有偏移not offset
+ 444   1        Oled_Write_Cmd(0xd5); //-设置时钟分频因子,震荡频率set display clock divide ratio/oscillator frequency
+ 445   1        Oled_Write_Cmd(0xf0); //--set divide ratio
+ 446   1        Oled_Write_Cmd(0xd9); //--set pre-charge period
+ 447   1        Oled_Write_Cmd(0x22); //
+ 448   1        Oled_Write_Cmd(0xda); //--设置COM硬件引脚配置set com pins hardware configuration
+ 449   1        Oled_Write_Cmd(0x12);//[5:4]配置
+ 450   1        Oled_Write_Cmd(0xdb); //--set vcomh
+ 451   1        Oled_Write_Cmd(0x20); //0x20,0.77xVcc
+ 452   1        Oled_Write_Cmd(0x8d); //-电荷泵设置set DC-DC enable
+ 453   1        Oled_Write_Cmd(0x14); //bit2，开启/关闭
+ 454   1        Oled_Write_Cmd(0xaf); //-开启显示 turn on oled panel
+ 455   1      }
+ 456          
+ 457          // void OLED_Init(void)
+ 458          // { 
+ 459          //  Oled_Write_Cmd(0xAE);//关闭显示
+ 460          //  Oled_Write_Cmd(0x00);//set memory addressing Mode
+ 461          //  Oled_Write_Cmd(0X10);
+ 462          //  Oled_Write_Cmd(0X40);
+ 463          //  Oled_Write_Cmd(0X81);
+ 464          //  Oled_Write_Cmd(0XCF);//分频因子
+ 465          //  Oled_Write_Cmd(0xA1);//设置驱动路数
+ 466          //  Oled_Write_Cmd(0xC8);//默认0X3f(1/64) 0x1f(1/32)
+ 467          //  Oled_Write_Cmd(0xA6); //设置显示偏移
+ 468          //  Oled_Write_Cmd(0xA8);//默认值00
+ 469              
+ 470          //  Oled_Write_Cmd(0x3F);//设置开始行 【5:0】，行数
+ 471            
+ 472          //  Oled_Write_Cmd(0xD3);//电荷泵设置
+ 473          //  Oled_Write_Cmd(0x00);//bit2,开启/关闭
+ 474            
+ 475          //  Oled_Write_Cmd(0xD5);//设置内存地址模式
+ 476          //  Oled_Write_Cmd(0x80);//[[1:0],00，列地址模式;01，行地址模式;10,页地址模式;默认10;
+ 477          //  Oled_Write_Cmd(0xD9);//段重定义设置,bit0:0,0->0;1,0->127;
+ 478          //  Oled_Write_Cmd(0xF1);//设置COM扫描方向
+ 479            
+ 480          //  Oled_Write_Cmd(0xDA);//设置COM硬件引脚配置
+ 481          //  Oled_Write_Cmd(0x12);//0.91英寸128*32分辨率
+ 482            
+ 483          //  Oled_Write_Cmd(0xDB);//对比度设置
+ 484          //  Oled_Write_Cmd(0x40);//1~255(亮度设置,越大越亮)
+C51 COMPILER V9.60.7.0   STC8G_H_I2C                                                       03/09/2025 21:38:48 PAGE 9   
+
+ 485            
+ 486          //  Oled_Write_Cmd(0x20);//设置预充电周期
+ 487          //  Oled_Write_Cmd(0x02);//[3:0],PHASE 1;[7:4],PHASE 2;
+ 488          //  Oled_Write_Cmd(0x8D);//设置VCOMH 电压倍率
+ 489          //  Oled_Write_Cmd(0x14);//[6:4] 000,0.65*vcc;001,0.77*vcc;011,0.83*vcc;
+ 490           
+ 491          //  Oled_Write_Cmd(0xA4);//全局显示开启;bit0:1,开启;0,关闭;(白屏/黑屏)
+ 492          //  Oled_Write_Cmd(0xA6);//设置显示方式;bit0:1,反相显示;0,正常显示
+ 493            
+ 494          //  Oled_Write_Cmd(0x2E);//停用滚动条 
+ 495          //  Oled_Write_Cmd(0xAF);//开启显示
+ 496          
+ 497          // }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =   1064    ----
+   CONSTANT SIZE    =   2072    ----
+   XDATA SIZE       =      8    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----      29
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

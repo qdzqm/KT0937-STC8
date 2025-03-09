@@ -1,0 +1,413 @@
+C51 COMPILER V9.60.7.0   STC8G_H_NVIC                                                      03/09/2025 21:38:48 PAGE 1   
+
+
+C51 COMPILER V9.60.7.0, COMPILATION OF MODULE STC8G_H_NVIC
+OBJECT MODULE PLACED IN .\Objects\STC8G_H_NVIC.obj
+COMPILER INVOKED BY: C:\Keil_v5\C51\BIN\C51.EXE src\STC8G_H_NVIC.c ROM(COMPACT) OPTIMIZE(8,SIZE) BROWSE DEBUG OBJECTEXTE
+                    -ND PRINT(.\Listings\STC8G_H_NVIC.lst) TABS(2) OBJECT(.\Objects\STC8G_H_NVIC.obj)
+
+line level    source
+
+   1          /*---------------------------------------------------------------------*/
+   2          /* --- STC MCU Limited ------------------------------------------------*/
+   3          /* --- STC 1T Series MCU Demo Programme -------------------------------*/
+   4          /* --- Mobile: (86)13922805190 ----------------------------------------*/
+   5          /* --- Fax: 86-0513-55012956,55012947,55012969 ------------------------*/
+   6          /* --- Tel: 86-0513-55012928,55012929,55012966 ------------------------*/
+   7          /* --- Web: www.STCAI.com ---------------------------------------------*/
+   8          /* --- BBS: www.STCAIMCU.com  -----------------------------------------*/
+   9          /* --- QQ:  800003751 -------------------------------------------------*/
+  10          /* 如果要在程序中使用此代码,请在程序中注明使用了STC的资料及程序            */
+  11          /*---------------------------------------------------------------------*/
+  12          
+  13          #include  "include/STC8G_H_NVIC.h"
+  14          
+  15          //========================================================================
+  16          // 函数: NVIC_Timer0_Init
+  17          // 描述: Timer0嵌套向量中断控制器初始化.
+  18          // 参数: State:    中断使能状态, ENABLE/DISABLE.
+  19          // 参数: Priority: 中断优先级, Priority_0,Priority_1,Priority_2,Priority_3.
+  20          // 返回: 执行结果 SUCCESS/FAIL.
+  21          // 版本: V1.0, 2020-09-29
+  22          //========================================================================
+  23          u8 NVIC_Timer0_Init(u8 State, u8 Priority)
+  24          {
+  25   1        if(State > ENABLE) return FAIL;
+  26   1        if(Priority > Priority_3) return FAIL;
+  27   1        Timer0_Interrupt(State);
+  28   1        Timer0_Priority(Priority);
+  29   1        return SUCCESS;
+  30   1      }
+  31          
+  32          // //========================================================================
+  33          // // 函数: NVIC_Timer1_Init
+  34          // // 描述: Timer1嵌套向量中断控制器初始化.
+  35          // // 参数: State:    中断使能状态, ENABLE/DISABLE.
+  36          // // 参数: Priority: 中断优先级, Priority_0,Priority_1,Priority_2,Priority_3.
+  37          // // 返回: 执行结果 SUCCESS/FAIL.
+  38          // // 版本: V1.0, 2020-09-29
+  39          // //========================================================================
+  40          // u8 NVIC_Timer1_Init(u8 State, u8 Priority)
+  41          // {
+  42          //  if(State > ENABLE) return FAIL;
+  43          //  if(Priority > Priority_3) return FAIL;
+  44          //  Timer1_Interrupt(State);
+  45          //  Timer1_Priority(Priority);
+  46          //  return SUCCESS;
+  47          // }
+  48          
+  49          // //========================================================================
+  50          // // 函数: NVIC_Timer2_Init
+  51          // // 描述: Timer2嵌套向量中断控制器初始化.
+  52          // // 参数: State:    中断使能状态, ENABLE/DISABLE.
+  53          // // 参数: Priority: 中断优先级, NULL.
+  54          // // 返回: 执行结果 SUCCESS/FAIL.
+C51 COMPILER V9.60.7.0   STC8G_H_NVIC                                                      03/09/2025 21:38:48 PAGE 2   
+
+  55          // // 版本: V1.0, 2020-09-29
+  56          // //========================================================================
+  57          // u8 NVIC_Timer2_Init(u8 State, u8 Priority)
+  58          // {
+  59          //  if(State > ENABLE) return FAIL;
+  60          //  if(Priority > Priority_3) return FAIL;
+  61          //  Timer2_Interrupt(State);
+  62          //  Priority = NULL;
+  63          //  return SUCCESS;
+  64          // }
+  65          
+  66          // //========================================================================
+  67          // // 函数: NVIC_Timer3_Init
+  68          // // 描述: Timer3嵌套向量中断控制器初始化.
+  69          // // 参数: State:    中断使能状态, ENABLE/DISABLE.
+  70          // // 参数: Priority: 中断优先级, NULL.
+  71          // // 返回: 执行结果 SUCCESS/FAIL.
+  72          // // 版本: V1.0, 2020-09-29
+  73          // //========================================================================
+  74          // u8 NVIC_Timer3_Init(u8 State, u8 Priority)
+  75          // {
+  76          //  if(State > ENABLE) return FAIL;
+  77          //  if(Priority > Priority_3) return FAIL;
+  78          //  Timer3_Interrupt(State);
+  79          //  Priority = NULL;
+  80          //  return SUCCESS;
+  81          // }
+  82          
+  83          // //========================================================================
+  84          // // 函数: NVIC_Timer4_Init
+  85          // // 描述: Timer4嵌套向量中断控制器初始化.
+  86          // // 参数: State:    中断使能状态, ENABLE/DISABLE.
+  87          // // 参数: Priority: 中断优先级, NULL.
+  88          // // 返回: 执行结果 SUCCESS/FAIL.
+  89          // // 版本: V1.0, 2020-09-29
+  90          // //========================================================================
+  91          // u8 NVIC_Timer4_Init(u8 State, u8 Priority)
+  92          // {
+  93          //  if(State > ENABLE) return FAIL;
+  94          //  if(Priority > Priority_3) return FAIL;
+  95          //  Timer4_Interrupt(State);
+  96          //  Priority = NULL;
+  97          //  return SUCCESS;
+  98          // }
+  99          
+ 100          // //========================================================================
+ 101          // // 函数: NVIC_INT0_Init
+ 102          // // 描述: INT0嵌套向量中断控制器初始化.
+ 103          // // 参数: State:    中断使能状态, ENABLE/DISABLE.
+ 104          // // 参数: Priority: 中断优先级, Priority_0,Priority_1,Priority_2,Priority_3.
+ 105          // // 返回: 执行结果 SUCCESS/FAIL.
+ 106          // // 版本: V1.0, 2020-09-29
+ 107          // //========================================================================
+ 108          // u8 NVIC_INT0_Init(u8 State, u8 Priority)
+ 109          // {
+ 110          //  if(State > ENABLE) return FAIL;
+ 111          //  if(Priority > Priority_3) return FAIL;
+ 112          //  INT0_Interrupt(State);
+ 113          //  INT0_Priority(Priority);
+ 114          //  return SUCCESS;
+ 115          // }
+ 116          
+C51 COMPILER V9.60.7.0   STC8G_H_NVIC                                                      03/09/2025 21:38:48 PAGE 3   
+
+ 117          // //========================================================================
+ 118          // // 函数: NVIC_INT1_Init
+ 119          // // 描述: INT1嵌套向量中断控制器初始化.
+ 120          // // 参数: State:    中断使能状态, ENABLE/DISABLE.
+ 121          // // 参数: Priority: 中断优先级, Priority_0,Priority_1,Priority_2,Priority_3.
+ 122          // // 返回: 执行结果 SUCCESS/FAIL.
+ 123          // // 版本: V1.0, 2020-09-29
+ 124          // //========================================================================
+ 125          // u8 NVIC_INT1_Init(u8 State, u8 Priority)
+ 126          // {
+ 127          //  if(State > ENABLE) return FAIL;
+ 128          //  if(Priority > Priority_3) return FAIL;
+ 129          //  INT1_Interrupt(State);
+ 130          //  INT1_Priority(Priority);
+ 131          //  return SUCCESS;
+ 132          // }
+ 133          
+ 134          // //========================================================================
+ 135          // // 函数: NVIC_INT2_Init
+ 136          // // 描述: INT2嵌套向量中断控制器初始化.
+ 137          // // 参数: State:    中断使能状态, ENABLE/DISABLE.
+ 138          // // 参数: Priority: 中断优先级, NULL.
+ 139          // // 返回: 执行结果 SUCCESS/FAIL.
+ 140          // // 版本: V1.0, 2020-09-29
+ 141          // //========================================================================
+ 142          // u8 NVIC_INT2_Init(u8 State, u8 Priority)
+ 143          // {
+ 144          //  if(State > ENABLE) return FAIL;
+ 145          //  INT2_Interrupt(State);
+ 146          //  Priority = NULL;
+ 147          //  return SUCCESS;
+ 148          // }
+ 149          
+ 150          // //========================================================================
+ 151          // // 函数: NVIC_INT3_Init
+ 152          // // 描述: INT3嵌套向量中断控制器初始化.
+ 153          // // 参数: State:    中断使能状态, ENABLE/DISABLE.
+ 154          // // 参数: Priority: 中断优先级, NULL.
+ 155          // // 返回: 执行结果 SUCCESS/FAIL.
+ 156          // // 版本: V1.0, 2020-09-29
+ 157          // //========================================================================
+ 158          // u8 NVIC_INT3_Init(u8 State, u8 Priority)
+ 159          // {
+ 160          //  if(State > ENABLE) return FAIL;
+ 161          //  INT3_Interrupt(State);
+ 162          //  Priority = NULL;
+ 163          //  return SUCCESS;
+ 164          // }
+ 165          
+ 166          // //========================================================================
+ 167          // // 函数: NVIC_INT4_Init
+ 168          // // 描述: INT4嵌套向量中断控制器初始化.
+ 169          // // 参数: State:    中断使能状态, ENABLE/DISABLE.
+ 170          // // 参数: Priority: 中断优先级, NULL.
+ 171          // // 返回: 执行结果 SUCCESS/FAIL.
+ 172          // // 版本: V1.0, 2020-09-29
+ 173          // //========================================================================
+ 174          // u8 NVIC_INT4_Init(u8 State, u8 Priority)
+ 175          // {
+ 176          //  if(State > ENABLE) return FAIL;
+ 177          //  INT4_Interrupt(State);
+ 178          //  Priority = NULL;
+C51 COMPILER V9.60.7.0   STC8G_H_NVIC                                                      03/09/2025 21:38:48 PAGE 4   
+
+ 179          //  return SUCCESS;
+ 180          // }
+ 181          
+ 182          // //========================================================================
+ 183          // // 函数: NVIC_ADC_Init
+ 184          // // 描述: ADC嵌套向量中断控制器初始化.
+ 185          // // 参数: State:    中断使能状态, ENABLE/DISABLE.
+ 186          // // 参数: Priority: 中断优先级, Priority_0,Priority_1,Priority_2,Priority_3.
+ 187          // // 返回: 执行结果 SUCCESS/FAIL.
+ 188          // // 版本: V1.0, 2020-09-29
+ 189          // //========================================================================
+ 190          // u8 NVIC_ADC_Init(u8 State, u8 Priority)
+ 191          // {
+ 192          //  if(State > ENABLE) return FAIL;
+ 193          //  if(Priority > Priority_3) return FAIL;
+ 194          //  ADC_Interrupt(State);
+ 195          //  ADC_Priority(Priority);
+ 196          //  return SUCCESS;
+ 197          // }
+ 198          
+ 199          // //========================================================================
+ 200          // // 函数: NVIC_CMP_Init
+ 201          // // 描述: 比较器嵌套向量中断控制器初始化.
+ 202          // // 参数: State:    中断使能状态, RISING_EDGE/FALLING_EDGE/DISABLE.
+ 203          // // 参数: Priority: 中断优先级, Priority_0,Priority_1,Priority_2,Priority_3.
+ 204          // // 返回: 执行结果 SUCCESS/FAIL.
+ 205          // // 版本: V1.0, 2020-09-29
+ 206          // //========================================================================
+ 207          // u8 NVIC_CMP_Init(u8 State, u8 Priority)
+ 208          // {
+ 209          //  if(Priority > Priority_3) return FAIL;
+ 210          //  if(State & RISING_EDGE) CMPCR1 |= PIE;      //允许上升沿中断
+ 211          //  else  CMPCR1 &= ~PIE;     //禁止上升沿中断
+ 212          //  if(State & FALLING_EDGE)  CMPCR1 |= NIE;    //允许下降沿中断
+ 213          //  else  CMPCR1 &= ~NIE;     //禁止上升沿中断
+ 214          //  CMP_Priority(Priority);
+ 215          //  return SUCCESS;
+ 216          // }
+ 217          
+ 218          //========================================================================
+ 219          // 函数: NVIC_I2C_Init
+ 220          // 描述: I2C嵌套向量中断控制器初始化.
+ 221          // 参数: Mode:     模式, I2C_Mode_Master/I2C_Mode_Slave.
+ 222          // 参数: State:    中断使能状态, I2C_Mode_Master: ENABLE/DISABLE.
+ 223          //                              I2C_Mode_Slave: I2C_ESTAI/I2C_ERXI/I2C_ETXI/I2C_ESTOI/DISABLE.
+ 224          // 参数: Priority: 中断优先级, Priority_0,Priority_1,Priority_2,Priority_3.
+ 225          // 返回: 执行结果 SUCCESS/FAIL.
+ 226          // 版本: V1.0, 2020-09-29
+ 227          //========================================================================
+ 228          u8 NVIC_I2C_Init(u8 Mode, u8 State, u8 Priority)
+ 229          {
+ 230   1        if(Mode > I2C_Mode_Master) return FAIL;
+ 231   1        if(Priority > Priority_3) return FAIL;
+ 232   1        if(Mode == I2C_Mode_Master)
+ 233   1        {
+ 234   2          I2C_Master_Inturrupt(State);
+ 235   2        }
+ 236   1        else if(Mode == I2C_Mode_Slave)
+ 237   1        {
+ 238   2          I2CSLCR = (I2CSLCR & ~0x78) | State;
+ 239   2        }
+ 240   1        CMP_Priority(Priority);
+C51 COMPILER V9.60.7.0   STC8G_H_NVIC                                                      03/09/2025 21:38:48 PAGE 5   
+
+ 241   1        return SUCCESS;
+ 242   1      }
+ 243          
+ 244          // //========================================================================
+ 245          // // 函数: NVIC_UART1_Init
+ 246          // // 描述: UART1嵌套向量中断控制器初始化.
+ 247          // // 参数: State:    中断使能状态, ENABLE/DISABLE.
+ 248          // // 参数: Priority: 中断优先级, Priority_0,Priority_1,Priority_2,Priority_3.
+ 249          // // 返回: 执行结果 SUCCESS/FAIL.
+ 250          // // 版本: V1.0, 2020-09-29
+ 251          // //========================================================================
+ 252          // u8 NVIC_UART1_Init(u8 State, u8 Priority)
+ 253          // {
+ 254          //  if(State > ENABLE) return FAIL;
+ 255          //  if(Priority > Priority_3) return FAIL;
+ 256          //  UART1_Interrupt(State);
+ 257          //  UART1_Priority(Priority);
+ 258          //  return SUCCESS;
+ 259          // }
+ 260          
+ 261          // //========================================================================
+ 262          // // 函数: NVIC_UART2_Init
+ 263          // // 描述: UART2嵌套向量中断控制器初始化.
+ 264          // // 参数: State:    中断使能状态, ENABLE/DISABLE.
+ 265          // // 参数: Priority: 中断优先级, Priority_0,Priority_1,Priority_2,Priority_3.
+ 266          // // 返回: 执行结果 SUCCESS/FAIL.
+ 267          // // 版本: V1.0, 2020-09-29
+ 268          // //========================================================================
+ 269          // u8 NVIC_UART2_Init(u8 State, u8 Priority)
+ 270          // {
+ 271          //  if(State > ENABLE) return FAIL;
+ 272          //  if(Priority > Priority_3) return FAIL;
+ 273          //  UART2_Interrupt(State);
+ 274          //  UART2_Priority(Priority);
+ 275          //  return SUCCESS;
+ 276          // }
+ 277          
+ 278          // //========================================================================
+ 279          // // 函数: NVIC_UART3_Init
+ 280          // // 描述: UART3嵌套向量中断控制器初始化.
+ 281          // // 参数: State:    中断使能状态, ENABLE/DISABLE.
+ 282          // // 参数: Priority: 中断优先级, Priority_0,Priority_1,Priority_2,Priority_3.
+ 283          // // 返回: 执行结果 SUCCESS/FAIL.
+ 284          // // 版本: V1.0, 2020-09-29
+ 285          // //========================================================================
+ 286          // u8 NVIC_UART3_Init(u8 State, u8 Priority)
+ 287          // {
+ 288          //  if(State > ENABLE) return FAIL;
+ 289          //  if(Priority > Priority_3) return FAIL;
+ 290          //  UART3_Interrupt(State);
+ 291          //  UART3_Priority(Priority);
+ 292          //  return SUCCESS;
+ 293          // }
+ 294          
+ 295          // //========================================================================
+ 296          // // 函数: NVIC_UART4_Init
+ 297          // // 描述: UART4嵌套向量中断控制器初始化.
+ 298          // // 参数: State:    中断使能状态, ENABLE/DISABLE.
+ 299          // // 参数: Priority: 中断优先级, Priority_0,Priority_1,Priority_2,Priority_3.
+ 300          // // 返回: 执行结果 SUCCESS/FAIL.
+ 301          // // 版本: V1.0, 2020-09-29
+ 302          // //========================================================================
+C51 COMPILER V9.60.7.0   STC8G_H_NVIC                                                      03/09/2025 21:38:48 PAGE 6   
+
+ 303          // u8 NVIC_UART4_Init(u8 State, u8 Priority)
+ 304          // {
+ 305          //  if(State > ENABLE) return FAIL;
+ 306          //  if(Priority > Priority_3) return FAIL;
+ 307          //  UART4_Interrupt(State);
+ 308          //  UART4_Priority(Priority);
+ 309          //  return SUCCESS;
+ 310          // }
+ 311          
+ 312          // //========================================================================
+ 313          // // 函数: NVIC_SPI_Init
+ 314          // // 描述: SPI嵌套向量中断控制器初始化.
+ 315          // // 参数: State:    中断使能状态, ENABLE/DISABLE.
+ 316          // // 参数: Priority: 中断优先级, Priority_0,Priority_1,Priority_2,Priority_3.
+ 317          // // 返回: 执行结果 SUCCESS/FAIL.
+ 318          // // 版本: V1.0, 2020-09-29
+ 319          // //========================================================================
+ 320          // u8 NVIC_SPI_Init(u8 State, u8 Priority)
+ 321          // {
+ 322          //  if(State > ENABLE) return FAIL;
+ 323          //  if(Priority > Priority_3) return FAIL;
+ 324          //  SPI_Interrupt(State);
+ 325          //  SPI_Priority(Priority);
+ 326          //  return SUCCESS;
+ 327          // }
+ 328          
+ 329          // //========================================================================
+ 330          // // 函数: NVIC_PWM_Init
+ 331          // // 描述: PWM嵌套向量中断控制器初始化.
+ 332          // // 参数: Channel:  通道, PWMA/PWMB.
+ 333          // // 参数: State:    中断使能状态, PWM_BIE/PWM_TIE/PWM_COMIE/PWM_CC8IE~PWM_CC1IE/PWM_UIE/DISABLE.
+ 334          // // 参数: Priority: 中断优先级, Priority_0,Priority_1,Priority_2,Priority_3.
+ 335          // // 返回: 执行结果 SUCCESS/FAIL.
+ 336          // // 版本: V1.0, 2020-09-29
+ 337          // //========================================================================
+ 338          // u8 NVIC_PWM_Init(u8 Channel, u8 State, u8 Priority)
+ 339          // {
+ 340          //  if(Channel > PWMB) return FAIL;
+ 341          //  if(Priority > Priority_3) return FAIL;
+ 342          //  switch(Channel)
+ 343          //  {
+ 344          //    case PWMA:
+ 345          //      PWMA_IER = State;
+ 346          //      PWMA_Priority(Priority);
+ 347          //    break;
+ 348          
+ 349          //    case PWMB:
+ 350          //      PWMB_IER = State;
+ 351          //      PWMB_Priority(Priority);
+ 352          //    break;
+ 353          
+ 354          //    default:
+ 355          //      PWMB_IER = State;
+ 356          //      Priority = NULL;
+ 357          //    break;
+ 358          //  }
+ 359          //  return SUCCESS;
+ 360          // }
+ 361          
+ 362          // //========================================================================
+ 363          // // 函数: NVIC_RTC_Init
+ 364          // // 描述: SPI嵌套向量中断控制器初始化.
+C51 COMPILER V9.60.7.0   STC8G_H_NVIC                                                      03/09/2025 21:38:48 PAGE 7   
+
+ 365          // // 参数: State:    中断使能状态, 中断使能, 0x80:闹钟中断, 0x40:日中断, 0x20:小时中断, 0x10:分钟中断, 0x
+             -08:秒中断, 0x04:1/2秒中断, 0x02:1/8秒中断, 0x01:1/32秒中断 /DISABLE.
+ 366          // // 参数: Priority: 中断优先级, Priority_0,Priority_1,Priority_2,Priority_3.
+ 367          // // 返回: 执行结果 SUCCESS/FAIL.
+ 368          // // 版本: V1.0, 2020-09-29
+ 369          // //========================================================================
+ 370          // u8 NVIC_RTC_Init(u8 State, u8 Priority)
+ 371          // {
+ 372          //  if(Priority <= Priority_3) RTC_Priority(Priority); else  return FAIL;
+ 373          //  RTC_Interrupt(State); 
+ 374          //  return SUCCESS;
+ 375          // }
+ 376          
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    151    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

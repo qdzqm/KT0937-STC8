@@ -1,0 +1,12 @@
+".\Objects\STARTUP.obj",
+".\Objects\main.obj",
+".\Objects\STC8G_H_Delay.obj",
+".\Objects\STC8G_H_GPIO.obj",
+".\Objects\STC8G_H_I2C.obj",
+".\Objects\STC8G_H_I2C_Isr.obj",
+".\Objects\STC8G_H_NVIC.obj",
+".\Objects\STC8G_H_Timer.obj",
+".\Objects\STC8G_H_Timer_Isr.obj" 
+TO ".\Objects\KT0937_STC8" 
+PRINT(".\Listings\KT0937_STC8.m51") RAMSIZE(256) 
+DISABLEWARNING (16) 

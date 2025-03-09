@@ -1,0 +1,356 @@
+C51 COMPILER V9.60.7.0   MAIN                                                              03/09/2025 21:38:48 PAGE 1   
+
+
+C51 COMPILER V9.60.7.0, COMPILATION OF MODULE MAIN
+OBJECT MODULE PLACED IN .\Objects\main.obj
+COMPILER INVOKED BY: C:\Keil_v5\C51\BIN\C51.EXE src\main.c ROM(COMPACT) OPTIMIZE(8,SIZE) BROWSE DEBUG OBJECTEXTEND PRINT
+                    -(.\Listings\main.lst) TABS(2) OBJECT(.\Objects\main.obj)
+
+line level    source
+
+   1          #include  "include/config.h"
+   2          #include  "include/STC8G_H_GPIO.h"
+   3          #include  "include/STC8G_H_I2C.h"
+   4          #include  "include/STC8G_H_Timer.h"
+   5          // #include "include/STC8G_H_UART.h"
+   6          #include  "include/STC8G_H_NVIC.h"
+   7          #include  "include/STC8G_H_Switch.h"
+   8          #include  "include/STC8G_H_Delay.h"
+   9          
+  10          /*************  本地常量声明  **************/
+  11          
+  12          
+  13          /*************  本地变量声明  **************/
+  14          bit B_1ms,fm,am,stereo,set=FALSE,tmp1=FALSE;         //1ms标志
+  15          
+  16          u8  x,y,snr,rssi,last,signal;     //通用数组
+  17          u16 msecond;
+  18          u32 freq;
+  19          
+  20          /*************  本地函数声明  **************/
+  21          
+  22          //void DisplayScan(void);
+  23          
+  24          /*************  外部函数和变量声明 *****************/
+  25          
+  26          
+  27          /******************** IO口配置 ********************/
+  28          void  GPIO_config(void)
+  29          {
+  30   1        P3_MODE_IO_PU(GPIO_Pin_2 | GPIO_Pin_3);   //P3.3,P3.2 设置为准双向口
+  31   1        P3_MODE_IO_PU(GPIO_Pin_0 | GPIO_Pin_1);   //P3.0,P3.1 设置为准双向口
+  32   1        P1_MODE_IN_HIZ(GPIO_Pin_0 | GPIO_Pin_1 | GPIO_Pin_6 );  //P1.0,P1.1 设置为输入悬空口
+  33   1        P1_MODE_IO_PU(GPIO_Pin_7);
+  34   1      }
+  35          
+  36          /************************ 定时器配置 ****************************/
+  37          void  Timer_config(void)
+  38          {
+  39   1        TIM_InitTypeDef   TIM_InitStructure;            //结构定义
+  40   1        TIM_InitStructure.TIM_Mode      = TIM_16BitAutoReload;  //指定工作模式,   TIM_16BitAutoReload,TIM_16Bit,T
+             -IM_8BitAutoReload,TIM_16BitAutoReloadNoMask
+  41   1        TIM_InitStructure.TIM_ClkSource = TIM_CLOCK_1T;         //指定时钟源,     TIM_CLOCK_1T,TIM_CLOCK_12T,TIM_
+             -CLOCK_Ext
+  42   1        TIM_InitStructure.TIM_ClkOut    = DISABLE;              //是否输出高速脉冲, ENABLE或DISABLE
+  43   1        TIM_InitStructure.TIM_Value     = 65536UL - (MAIN_Fosc / 1000UL);   //初值,
+  44   1        TIM_InitStructure.TIM_Run       = ENABLE;               //是否初始化后启动定时器, ENABLE或DISABLE
+  45   1        Timer_Inilize(Timer0,&TIM_InitStructure);               //初始化Timer0    Timer0,Timer1,Timer2,Timer3,Time
+             -r4
+  46   1        NVIC_Timer0_Init(ENABLE,Priority_0);    //中断使能, ENABLE/DISABLE; 优先级(低到高) Priority_0,Priority_1,
+             -Priority_2,Priority_3
+  47   1      }
+  48          
+  49          /****************  I2C初始化函数 *****************/
+  50          void  I2C_config(void)
+C51 COMPILER V9.60.7.0   MAIN                                                              03/09/2025 21:38:48 PAGE 2   
+
+  51          {
+  52   1        I2C_InitTypeDef   I2C_InitStructure;
+  53   1      
+  54   1        I2C_InitStructure.I2C_Mode      = I2C_Mode_Master;    //主从选择   I2C_Mode_Master, I2C_Mode_Slave
+  55   1        I2C_InitStructure.I2C_Enable    = ENABLE;           //I2C功能使能,   ENABLE, DISABLE
+  56   1        I2C_InitStructure.I2C_Speed  = 58;
+  57   1        I2C_InitStructure.I2C_MS_WDTA   = DISABLE;            //主机模式下,是否使能自动发送功能,   ENABLE, DISABLE
+  58   1        //I2C_InitStructure.I2C_SL_MA     = ENABLE;           //使能从机地址比较功能,   ENABLE, DISABLE
+  59   1        //I2C_InitStructure.I2C_SL_ADR    = 0x2d;             //从机设备地址,  0~127  (0x2d<<1 = 0x5a)
+  60   1        I2C_Init(&I2C_InitStructure);
+  61   1        NVIC_I2C_Init(I2C_Mode_Master,I2C_ESTAI|I2C_ERXI|I2C_ETXI|I2C_ESTOI,Priority_0);  //主从模式, I2C_Mode_Mas
+             -ter, I2C_Mode_Slave; 中断使能, I2C_ESTAI/I2C_ERXI/I2C_ETXI/I2C_ESTOI/DISABLE; 优先级(低到高) Priority_0,Priority_1,Prior
+             -ity_2,Priority_3
+  62   1      
+  63   1        I2C_SW(I2C_P33_P32);          //I2C_P14_P15,I2C_P24_P25,I2C_P33_P32
+  64   1        //I2C_SW(I2C_P24_P25);          //I2C_P14_P15,I2C_P24_P25,I2C_P33_P32
+  65   1      }
+  66          
+  67          /****************  UART初始化函数 *****************/
+  68          // void UART_config(void)
+  69          // {
+  70          //  COMx_InitDefine   COMx_InitStructure;         //结构定义
+  71          
+  72          //  COMx_InitStructure.UART_Mode      = UART_8bit_BRTx; //模式, UART_ShiftRight,UART_8bit_BRTx,UART_9bit,U
+             -ART_9bit_BRTx
+  73          //  COMx_InitStructure.UART_BRT_Use   = BRT_Timer1;     //选择波特率发生器, BRT_Timer1, BRT_Timer2 (注意: 串
+             -口2固定使用BRT_Timer2)
+  74          //  COMx_InitStructure.UART_BaudRate  = 115200ul;     //波特率, 一般 110 ~ 115200
+  75          //  COMx_InitStructure.UART_RxEnable  = ENABLE;       //接收允许,   ENABLE或DISABLE
+  76          //  COMx_InitStructure.BaudRateDouble = DISABLE;      //波特率加倍, ENABLE或DISABLE
+  77          //  UART_Configuration(UART1, &COMx_InitStructure);   //初始化串口1 UART1,UART2,UART3,UART4
+  78          //  NVIC_UART1_Init(ENABLE,Priority_1);   //中断使能, ENABLE/DISABLE; 优先级(低到高) Priority_0,Priority_1,
+             -Priority_2,Priority_3
+  79          
+  80          //  UART1_SW(UART1_SW_P30_P31);   //UART1_SW_P30_P31,UART1_SW_P36_P37,UART1_SW_P16_P17,UART1_SW_P43_P44
+  81          // }
+  82          
+  83          /**************** 写入KT0937寄存器 *****************/
+  84          void WriteRegister(u8 reg, u8 value) 
+  85          {
+  86   1        I2C_Writebyte(0x6a, reg, &value);
+  87   1      }
+  88          
+  89          /**************** 读取KT0937寄存器 *****************/
+  90          void ReadRegister(u8 reg, u8 *value)
+  91          {
+  92   1        I2C_Readbyte(0x6a, reg, value);
+  93   1      }
+  94          
+  95          /**************** 配置FM *****************/
+  96          void SetFM()
+  97          {
+  98   1        WriteRegister(0x04, 0x80);//Clock initialization completed.
+  99   1        WriteRegister(0x51, 0x02);//Dial controlled channel increase/decrease
+ 100   1        WriteRegister(0x4e,0x13);//DEPOP_TC=500ms AUDV_DCLVL=1.15V
+ 101   1        WriteRegister(0x2f,0x22);//ANT_CALI_SWITCH_BAND=1 SMUTE_FILTER_EN = 1
+ 102   1        // WriteRegister(0x51, 0x01);//Key controlled channel increase/decrease
+ 103   1        WriteRegister(0x71, 0x80);//Channel ADC Disable, Channel ADC Start set to None.
+ 104   1        WriteRegister(0x9b, 0xcd);//设置87.5MHz~108MHz之间分为205个通道，间隔0.1MHz
+ 105   1        WriteRegister(0x9a, 0x00);//设置87.5MHz~108MHz之间分为205个通道，间隔0.1MHz
+ 106   1        WriteRegister(0x88, 0x88);//可以改变band，FM模式，最高频率是108MHz
+ 107   1        WriteRegister(0x89, 0x70);//最高频率是108MHz
+C51 COMPILER V9.60.7.0   MAIN                                                              03/09/2025 21:38:48 PAGE 3   
+
+ 108   1        WriteRegister(0x99, 0xd6);//最低频率是87.5MHz
+ 109   1        WriteRegister(0x98, 0x06);//最低频率是87.5MHz
+ 110   1        WriteRegister(0x18, 0x59);//FM Band Space 100KHz, MW Band Space 9KHz
+ 111   1        WriteRegister(0x71, 0x04);//Enable Channel ADC, Channel ADC Start
+ 112   1        WriteRegister(0x22, 0xd5);//Enable Tune Interrupt, INT is edge triggered, FM_SMUTE_START_SNR=default
+ 113   1        WriteRegister(0x1F, 0xd3);//INT interrupt is active high, FM_SMUTE_START_RSSI=default, FM_SMUTE_SLOPE_RSS
+             -I=default
+ 114   1        WriteRegister(0x2b, 0x20);//Stereo, 75us De-emphasis, Blend enable
+ 115   1        }
+ 116          
+ 117          /**************** 配置MW *****************/
+ 118            void SetAM()
+ 119            {
+ 120   1        WriteRegister(0x04, 0x80);//Clock initialization completed.
+ 121   1        WriteRegister(0xa0, 0x03);//CH_GUARD=3
+ 122   1        WriteRegister(0x51, 0x02);//Dial controlled channel increase/decrease
+ 123   1        WriteRegister(0x71, 0x80);//Channel ADC Enable, Channel ADC Start set to None.
+ 124   1        WriteRegister(0x9b, 0x7a);//通道间隔(1620-522)/9=122
+ 125   1        WriteRegister(0x9a, 0x00);//通道间隔(1620-522)/9=122
+ 126   1        WriteRegister(0x88, 0xc8);//Change band, AM mode, High edge frequency of FM band set to 108MHz
+ 127   1        WriteRegister(0x99, 0x0a);//MW最低频率522KHz
+ 128   1        WriteRegister(0x98, 0x02);//MW最低频率522KHz
+ 129   1        WriteRegister(0x8c, 0x06);//MW最高频率1620KHz
+ 130   1        WriteRegister(0x8d, 0x54);//MW最高频率1620KHz
+ 131   1        WriteRegister(0x18, 0x59);//FM Band Space 100KHz, MW Band Space 9KHz
+ 132   1        WriteRegister(0x71, 0x04);//Enable Channel ADC, Channel ADC Start
+ 133   1        WriteRegister(0x22, 0xd5);//Enable Tune Interrupt, INT is edge triggered, FM_SMUTE_START_SNR=default
+ 134   1        WriteRegister(0x1F, 0xd3);//INT interrupt is active high, FM_SMUTE_START_RSSI=default, FM_SMUTE_SLOPE_RSS
+             -I=default
+ 135   1        }
+ 136            /**************** 配置MW *****************/
+ 137            void SetSW()
+ 138            {
+ 139   1        WriteRegister(0x04, 0x80);//Clock initialization completed.
+ 140   1        WriteRegister(0xa0, 0x03);//CH_GUARD=3
+ 141   1        WriteRegister(0x51, 0x02);//Dial controlled channel increase/decrease
+ 142   1        WriteRegister(0x71, 0x80);//Channel ADC Enable, Channel ADC Start set to None.
+ 143   1        WriteRegister(0x9b, 0x20);//通道间隔(8000-4000)/5=800
+ 144   1        WriteRegister(0x9a, 0x03);//通道间隔(8000-4000)/5=800
+ 145   1        WriteRegister(0x99, 0xa0);//MW最低频率4000KHz
+ 146   1        WriteRegister(0x98, 0x0f);//MW最低频率4000KHz
+ 147   1        WriteRegister(0x8c, 0x1f);//MW最高频率8000KHz
+ 148   1        WriteRegister(0x8d, 0x40);//MW最高频率8000KHz
+ 149   1        WriteRegister(0x19, 0x31);//SW Band Space 5KHz, keep others default.
+ 150   1        WriteRegister(0x62, 0x40);//AM Channel Filter Bandwidth Selection = 1.2kHz
+ 151   1        WriteRegister(0x16, 0x9a);//SW Enable
+ 152   1        WriteRegister(0x71, 0x04);//Enable Channel ADC, Channel ADC Start
+ 153   1        WriteRegister(0x88, 0xc8);//Change band, AM mode, High edge frequency of FM band set to 108MHz
+ 154   1        WriteRegister(0x22, 0xd5);//Enable Tune Interrupt, INT is edge triggered, FM_SMUTE_START_SNR=default
+ 155   1        WriteRegister(0x1F, 0xd3);//INT interrupt is active high, FM_SMUTE_START_RSSI=default, FM_SMUTE_SLOPE_RSS
+             -I=default
+ 156   1        }
+ 157          /**************** 读取当前频率 *****************/
+ 158            void GetFrequency(u32 *frequency) 
+ 159            {
+ 160   1        u8 high_byte, low_byte;
+ 161   1        ReadRegister(0xe4, &high_byte);
+ 162   1        ReadRegister(0xe5, &low_byte);
+ 163   1        *frequency = (high_byte << 8) | low_byte;
+ 164   1      
+ 165   1        }
+ 166          /**************** 读取FM RSSI *****************/
+C51 COMPILER V9.60.7.0   MAIN                                                              03/09/2025 21:38:48 PAGE 4   
+
+ 167            void GetFMrssi(u8 *rssi)
+ 168            {
+ 169   1        u8 fm_rssi;
+ 170   1        ReadRegister(0xe6, &fm_rssi);
+ 171   1        *rssi = fm_rssi -3;
+ 172   1        }
+ 173          /**************** 读取FM SNR *****************/  
+ 174            void GetFMsnr(u8 *snr)
+ 175            {
+ 176   1        ReadRegister(0xe2, snr);
+ 177   1        }
+ 178          /**************** 读取MW RSSI *****************/ 
+ 179            void GetMWrssi(u8 *rssi)
+ 180            {
+ 181   1        u8 mw_rssi;
+ 182   1        ReadRegister(0xea, &mw_rssi);
+ 183   1        *rssi = mw_rssi -3;
+ 184   1        }
+ 185          /**************** 读取MW SNR *****************/ 
+ 186            void GetMWsnr(u8 *snr)
+ 187            {
+ 188   1        ReadRegister(0xec, snr);
+ 189   1        }
+ 190          /**************** 检查是否是立体声 *****************/ 
+ 191            BOOL CheckStereo()
+ 192            {
+ 193   1        u8 i=0;
+ 194   1        ReadRegister(0xde, &i);
+ 195   1        i = i & 0x01;
+ 196   1        return i;
+ 197   1        }
+ 198            /**************** 更新屏幕 *****************/
+ 199            void UpdateScreen()
+ 200            {
+ 201   1        u8 xx=32;
+ 202   1        GetFrequency(&freq);
+ 203   1        if(fm)
+ 204   1        {
+ 205   2          GetFMrssi(&rssi);
+ 206   2          GetFMsnr(&snr);
+ 207   2          signal = (rssi * snr)/20;
+ 208   2          OLED_ShowSignal(0,0,signal,&last);
+ 209   2          stereo = CheckStereo();
+ 210   2          OLED_ShowNum(xx,3, freq/20,3,16);
+ 211   2          OLED_ShowChar(xx+24,3,'.',16);
+ 212   2          OLED_ShowNum(xx+32,3,(freq/2)%10,1,16);
+ 213   2          OLED_ShowString(xx+44,4,"MHz",8);
+ 214   2          OLED_ShowString(0,7,"FM",8);
+ 215   2          if(stereo)
+ 216   2          {
+ 217   3            OLED_ShowString(80,7,"STEREO",8);
+ 218   3          }
+ 219   2          else
+ 220   2          {
+ 221   3            OLED_ShowString(80,7,"  MONO",8);
+ 222   3          }
+ 223   2        }
+ 224   1        else
+ 225   1        {
+ 226   2          GetMWrssi(&rssi);
+ 227   2          GetMWsnr(&snr);
+ 228   2          signal = (rssi * snr)/50;
+C51 COMPILER V9.60.7.0   MAIN                                                              03/09/2025 21:38:48 PAGE 5   
+
+ 229   2          OLED_ShowSignal(0,0,signal,&last);
+ 230   2          OLED_ShowNum(xx,3, freq,5,16);
+ 231   2          OLED_ShowString(xx+44,4,"KHz",8);
+ 232   2          OLED_ShowString(0,7,"MW",8);
+ 233   2        }
+ 234   1        
+ 235   1        }
+ 236          
+ 237          /******************** Main() **************************/
+ 238          void main(void)
+ 239          {
+ 240   1        EAXSFR();   /* 扩展寄存器访问使能 */
+ 241   1        GPIO_config();
+ 242   1        Timer_config();
+ 243   1        I2C_config();
+ 244   1        // UART_config();
+ 245   1        OLED_Clear();
+ 246   1        OLED_Init();
+ 247   1      
+ 248   1        EA = 1;
+ 249   1        fm = FALSE;am=FALSE;
+ 250   1        while (1)
+ 251   1        {
+ 252   2          if(B_1ms)
+ 253   2          {
+ 254   3            B_1ms = 0;
+ 255   3                  if(++msecond >= 1000 && set == FALSE)   //1秒到
+ 256   3                  {
+ 257   4              msecond = 0;
+ 258   4              GetFrequency(&freq);
+ 259   4              if(freq == 1720)
+ 260   4              {
+ 261   5                SetFM();
+ 262   5                fm = TRUE;
+ 263   5                am = FALSE;
+ 264   5              }
+ 265   4              else
+ 266   4              {
+ 267   5                set = TRUE;
+ 268   5              }
+ 269   4                  }
+ 270   3          }
+ 271   2      
+ 272   2          if(P10 == 1)
+ 273   2          {
+ 274   3            UpdateScreen();
+ 275   3          }
+ 276   2          if(P11 == 0 && !fm)
+ 277   2          {
+ 278   3            SetFM();OLED_Clear();
+ 279   3            fm = TRUE;
+ 280   3            am = FALSE;
+ 281   3            UpdateScreen();
+ 282   3          }
+ 283   2          if(P11 == 1 && !am)
+ 284   2          {
+ 285   3            SetSW();OLED_Clear();
+ 286   3            fm = FALSE;
+ 287   3            am = TRUE;
+ 288   3            UpdateScreen();
+ 289   3          }
+ 290   2          // if(P16 == 1 && tmp1 == FALSE)
+C51 COMPILER V9.60.7.0   MAIN                                                              03/09/2025 21:38:48 PAGE 6   
+
+ 291   2          // {
+ 292   2          //  tmp1 = TRUE;
+ 293   2          //  WriteRegister(0x0e, 0x00);
+ 294   2          //  WriteRegister(0x51, 0x01);      WriteRegister(0x88, 0x88);
+ 295   2          //  WriteRegister(0xe4, 0x08);
+ 296   2          //  WriteRegister(0xe5, 0x6a);
+ 297   2          //  delay_ms(20);P17=0;delay_ms(20);P17=1;
+ 298   2      
+ 299   2          // }
+ 300   2          // if(P16 == 0 && tmp1 == TRUE)
+ 301   2          // {
+ 302   2          //  tmp1 = FALSE;
+ 303   2          //  WriteRegister(0x51, 0x01);      WriteRegister(0x88, 0x88);
+ 304   2          //  WriteRegister(0xe4, 0x06);
+ 305   2          //  WriteRegister(0xe5, 0xde);
+ 306   2          //  delay_ms(20);P17=0;delay_ms(20);P17=1;
+ 307   2          // }
+ 308   2        }
+ 309   1        
+ 310   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =   1061    ----
+   CONSTANT SIZE    =     28    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =     12      28
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =      6    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

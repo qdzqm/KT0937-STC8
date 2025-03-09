@@ -1,0 +1,425 @@
+C51 COMPILER V9.60.7.0   STC8G_H_OLED                                                      03/08/2025 20:42:39 PAGE 1   
+
+
+C51 COMPILER V9.60.7.0, COMPILATION OF MODULE STC8G_H_OLED
+OBJECT MODULE PLACED IN .\Objects\STC8G_H_Oled.obj
+COMPILER INVOKED BY: C:\Keil_v5\C51\BIN\C51.EXE src\STC8G_H_Oled.c ROM(COMPACT) OPTIMIZE(8,SIZE) BROWSE DEBUG OBJECTEXTE
+                    -ND PRINT(.\Listings\STC8G_H_Oled.lst) TABS(2) OBJECT(.\Objects\STC8G_H_Oled.obj)
+
+line level    source
+
+   1          
+   2          #include    "include/OLEDFont.h"
+   3          #include    "string.h"
+   4          #include  "include/STC8G_H_I2C.h"
+*** WARNING C317 IN LINE 50 OF \Software\STC8\KT0937_STC8\include\type_def.h: attempt to redefine macro 'NULL'
+   5          #include  "include/STC8G_H_Oled.h"
+   6          
+   7          //========================================================================
+   8          // ∫Ø ˝: void Wait (void)
+   9          // √Ë ˆ: µ»¥˝÷˜ª˙ƒ£ ΩI2Cøÿ÷∆∆˜÷¥––ÕÍ≥…I2CMSCR.
+  10          // ≤Œ ˝: none.
+  11          // ∑µªÿ: none.
+  12          // ∞Ê±æ: V1.0, 2012-11-22
+  13          //========================================================================
+  14          void Wait()
+  15          {
+  16   1        while (!(I2CMSST & 0x40));
+  17   1        I2CMSST &= ~0x40;
+  18   1      }
+  19          
+  20          //========================================================================
+  21          // ∫Ø ˝: void Start (void)
+  22          // √Ë ˆ: I2C◊‹œﬂ∆ º∫Ø ˝.
+  23          // ≤Œ ˝: none.
+  24          // ∑µªÿ: none.
+  25          // ∞Ê±æ: V1.0, 2020-09-15
+  26          //========================================================================
+  27          void Start()
+  28          {
+  29   1        I2CMSCR = 0x01;                         //∑¢ÀÕSTART√¸¡Ó
+  30   1        Wait();
+  31   1      }
+  32          
+  33          //========================================================================
+  34          // ∫Ø ˝: void SendData (u8 dat)
+  35          // √Ë ˆ: I2C∑¢ÀÕ“ª∏ˆ◊÷Ω⁄ ˝æ›∫Ø ˝.
+  36          // ≤Œ ˝: ∑¢ÀÕµƒ ˝æ›.
+  37          // ∑µªÿ: none.
+  38          // ∞Ê±æ: V1.0, 2020-09-15
+  39          //========================================================================
+  40          void SendData(u8 dat)
+  41          {
+  42   1        I2CTXD = dat;                           //–¥ ˝æ›µΩ ˝æ›ª∫≥Â«¯
+  43   1        I2CMSCR = 0x02;                         //∑¢ÀÕSEND√¸¡Ó
+  44   1        Wait();
+  45   1      }
+  46          
+  47          //========================================================================
+  48          // ∫Ø ˝: void RecvACK (void)
+  49          // √Ë ˆ: I2CªÒ»°ACK∫Ø ˝.
+  50          // ≤Œ ˝: none.
+  51          // ∑µªÿ: none.
+  52          // ∞Ê±æ: V1.0, 2020-09-15
+  53          //========================================================================
+C51 COMPILER V9.60.7.0   STC8G_H_OLED                                                      03/08/2025 20:42:39 PAGE 2   
+
+  54          void RecvACK()
+  55          {
+  56   1        I2CMSCR = 0x03;                         //∑¢ÀÕ∂¡ACK√¸¡Ó
+  57   1        Wait();
+  58   1      }
+  59          
+  60          //========================================================================
+  61          // ∫Ø ˝: char RecvData (void)
+  62          // √Ë ˆ: I2C∂¡»°“ª∏ˆ◊÷Ω⁄ ˝æ›∫Ø ˝.
+  63          // ≤Œ ˝: none.
+  64          // ∑µªÿ: ∂¡»° ˝æ›.
+  65          // ∞Ê±æ: V1.0, 2020-09-15
+  66          //========================================================================
+  67          char RecvData()
+  68          {
+  69   1        I2CMSCR = 0x04;                         //∑¢ÀÕRECV√¸¡Ó
+  70   1        Wait();
+  71   1        return I2CRXD;
+  72   1      }
+  73          
+  74          //========================================================================
+  75          // ∫Ø ˝: void SendACK (void)
+  76          // √Ë ˆ: I2C∑¢ÀÕACK∫Ø ˝.
+  77          // ≤Œ ˝: none.
+  78          // ∑µªÿ: none.
+  79          // ∞Ê±æ: V1.0, 2020-09-15
+  80          //========================================================================
+  81          void SendACK()
+  82          {
+  83   1        I2CMSST = 0x00;                         //…Ë÷√ACK–≈∫≈
+  84   1        I2CMSCR = 0x05;                         //∑¢ÀÕACK√¸¡Ó
+  85   1        Wait();
+  86   1      }
+  87          
+  88          //========================================================================
+  89          // ∫Ø ˝: void SendNAK (void)
+  90          // √Ë ˆ: I2C∑¢ÀÕNAK∫Ø ˝.
+  91          // ≤Œ ˝: none.
+  92          // ∑µªÿ: none.
+  93          // ∞Ê±æ: V1.0, 2020-09-15
+  94          //========================================================================
+  95          void SendNAK()
+  96          {
+  97   1        I2CMSST = 0x01;                         //…Ë÷√NAK–≈∫≈
+  98   1        I2CMSCR = 0x05;                         //∑¢ÀÕACK√¸¡Ó
+  99   1        Wait();
+ 100   1      }
+ 101          
+ 102          //========================================================================
+ 103          // ∫Ø ˝: void Stop (void)
+ 104          // √Ë ˆ: I2C◊‹œﬂÕ£÷π∫Ø ˝.
+ 105          // ≤Œ ˝: none.
+ 106          // ∑µªÿ: none.
+ 107          // ∞Ê±æ: V1.0, 2020-09-15
+ 108          //========================================================================
+ 109          void Stop()
+ 110          {
+ 111   1        I2CMSCR = 0x06;                         //∑¢ÀÕSTOP√¸¡Ó
+ 112   1        Wait();
+ 113   1      }
+ 114          //========================================================================
+ 115          // ∫Ø ˝: 
+C51 COMPILER V9.60.7.0   STC8G_H_OLED                                                      03/08/2025 20:42:39 PAGE 3   
+
+ 116          // √Ë ˆ: 
+ 117          // ≤Œ ˝: 
+ 118          // ∑µªÿ: 
+ 119          // ∞Ê±æ: 
+ 120          //========================================================================
+ 121          void Oled_Write_Cmd(u8 Comd)  /* œÚOLED –¥»Î√¸¡Ó */
+ 122          {
+ 123   1        Start();  SendData(0x78); //«˝∂Øµÿ÷∑ 0x78
+ 124   1        RecvACK();  SendData(0x00); // ∑¢ÀÕµƒ÷ªŒ™◊÷Ω⁄D/C=000 0000Œ™√¸¡Ó
+ 125   1        RecvACK();  SendData(Comd);
+ 126   1        RecvACK();
+ 127   1        Stop();
+ 128   1      }
+ 129          //========================================================================
+ 130          // ∫Ø ˝: 
+ 131          // √Ë ˆ: 
+ 132          // ≤Œ ˝: 
+ 133          // ∑µªÿ: 
+ 134          // ∞Ê±æ: 
+ 135          //======================================================================== 
+ 136          void Oled_Write_Data(u8 Data)   /* œÚOLED –¥»Î ˝æ› */
+ 137          {
+ 138   1        Start();    SendData(0x78); //«˝∂Øµÿ÷∑ 0x78
+ 139   1        RecvACK();  SendData(0x40); // ∑¢ÀÕµƒ÷ªŒ™◊÷Ω⁄D/C=100 0000Œ™ ˝æ›
+ 140   1        RecvACK();  SendData(Data);
+ 141   1        RecvACK();
+ 142   1        Stop();
+ 143   1      }
+ 144          //========================================================================
+ 145          // ∫Ø ˝: 
+ 146          // √Ë ˆ: 
+ 147          // ≤Œ ˝: 
+ 148          // ∑µªÿ: 
+ 149          // ∞Ê±æ: 
+ 150          //========================================================================
+ 151          /* ◊¯±Í…Ë÷√∫Ø ˝ */ 
+ 152          void OLED_Set_Points(u8 x, u8 y) 
+ 153          {   
+ 154   1        Oled_Write_Cmd(0xb0+y);
+ 155   1        Oled_Write_Cmd(((x&0xf0)>>4)|0x10);
+ 156   1        Oled_Write_Cmd((x&0x0f)); 
+ 157   1      }       
+ 158          //========================================================================
+ 159          // ∫Ø ˝: 
+ 160          // √Ë ˆ: 
+ 161          // ≤Œ ˝: 
+ 162          // ∑µªÿ: 
+ 163          // ∞Ê±æ: 
+ 164          //======================================================================== 
+ 165          /* «Â∆¡∫Ø ˝ */  
+ 166          void OLED_Clear(void)  
+ 167          {  
+ 168   1        u8 i,n;       
+ 169   1        for(i=0;i<8;i++)  
+ 170   1        {  
+ 171   2          Oled_Write_Cmd(0xb0+i);    //…Ë÷√“≥µÿ÷∑£®0~3£©
+ 172   2          Oled_Write_Cmd(0x00);      //…Ë÷√œ‘ æŒª÷√°™¡–µÕµÿ÷∑
+ 173   2          Oled_Write_Cmd(0x10);      //…Ë÷√œ‘ æŒª÷√°™¡–∏ﬂµÿ÷∑   
+ 174   2          for(n=0;n<128;n++)    Oled_Write_Data(0);
+ 175   2        } 
+ 176   1      }
+ 177          //========================================================================
+C51 COMPILER V9.60.7.0   STC8G_H_OLED                                                      03/08/2025 20:42:39 PAGE 4   
+
+ 178          // ∫Ø ˝: 
+ 179          // √Ë ˆ: 
+ 180          // ≤Œ ˝: 
+ 181          // ∑µªÿ: 
+ 182          // ∞Ê±æ: 
+ 183          //========================================================================
+ 184          void OLED_ShowPx(u8 x,u8 y)
+ 185          {       
+ 186   1        u8 c=0,i=0; 
+ 187   1      //  c = car-' ';   //∆´“∆∫Ûµƒ÷µ     
+ 188   1        if(x>128-1)  {x=0;y=y+2;}
+ 189   1      
+ 190   1          OLED_Set_Points(x,y);
+ 191   1          Oled_Write_Data(0x55);
+ 192   1      
+ 193   1      
+ 194   1      }
+ 195          //========================================================================
+ 196          // ∫Ø ˝: 
+ 197          // √Ë ˆ: 
+ 198          // ≤Œ ˝: 
+ 199          // ∑µªÿ: 
+ 200          // ∞Ê±æ: 
+ 201          //========================================================================
+ 202             /* œ‘ æ◊÷∑˚          ¡–     ––  ◊÷∑˚ƒ⁄»›       ƒƒ∏ˆ ˝◊È */
+ 203          void OLED_ShowChar(u8 x,u8 y,u8 car,u8 Char_Size)
+ 204          {   
+ 205   1        u8 c=0,i=0; 
+ 206   1        c = car-' ';   //∆´“∆∫Ûµƒ÷µ     
+ 207   1        if(x>128-1)  {x=0;y=y+2;}
+ 208   1        if(Char_Size ==16)
+ 209   1          {
+ 210   2            OLED_Set_Points(x,y); 
+ 211   2            for(i=0;i<8;i++)
+ 212   2              { Oled_Write_Data(F8X16[c*16+i]); }
+ 213   2            OLED_Set_Points(x,y+1);
+ 214   2            for(i=0;i<8;i++)
+ 215   2              { Oled_Write_Data(F8X16[c*16+i+8]); }
+ 216   2          }
+ 217   1        else 
+ 218   1          { 
+ 219   2            OLED_Set_Points(x,y);
+ 220   2            for(i=0;i<6;i++)
+ 221   2              { Oled_Write_Data(F6x8[c][i]);  }
+ 222   2          }
+ 223   1      }
+ 224          //========================================================================
+ 225          // ∫Ø ˝: 
+ 226          // √Ë ˆ: 
+ 227          // ≤Œ ˝: 
+ 228          // ∑µªÿ: 
+ 229          // ∞Ê±æ: 
+ 230          //========================================================================
+ 231            /* ◊÷∑˚¥Æ–Œ Ωœ‘ æ◊÷∑˚   ¡–      ––  ÷∏’Î-◊÷∑˚¥Æ    ƒƒ∏ˆ ˝◊È */
+ 232          void OLED_ShowString(u8 x,u8 y,u8 *chr,u8 Char_Size)
+ 233          {
+ 234   1        u8 j;
+ 235   1        for(j=0;j<strlen(chr);j++)
+ 236   1         {    
+ 237   2           OLED_ShowChar(x,y,chr[j],Char_Size);
+ 238   2            x+=6;
+ 239   2          if(x>120) {x=0;y+=2;}
+C51 COMPILER V9.60.7.0   STC8G_H_OLED                                                      03/08/2025 20:42:39 PAGE 5   
+
+ 240   2         }
+ 241   1      }
+ 242          //========================================================================
+ 243          // ∫Ø ˝: 
+ 244          // √Ë ˆ: 
+ 245          // ≤Œ ˝: 
+ 246          // ∑µªÿ: 
+ 247          // ∞Ê±æ: 
+ 248          //======================================================================== 
+ 249          u16 OLED_Pow(u8 m,u8 n)
+ 250          {
+ 251   1        u16 result=1;  
+ 252   1        while(n--)result*=m;    
+ 253   1        return result;
+ 254   1      }     
+ 255           //========================================================================
+ 256          // ∫Ø ˝: 
+ 257          // √Ë ˆ: 
+ 258          // ≤Œ ˝: 
+ 259          // ∑µªÿ: 
+ 260          // ∞Ê±æ: 
+ 261          //========================================================================
+ 262            /* œ‘ æ±‰¡ø ˝◊÷      ¡–    ––   ±‰¡øƒ⁄»›  ◊÷∑˚≥§∂»   ◊÷∑˚¥Û–°16ªÚ8  */
+ 263          void OLED_ShowNum(u8 x,u8 y,u16 num,u8 len,u8 num_size)
+ 264          {           
+ 265   1        u8 t,temp,enshow=0;
+ 266   1        for(t=0;t<len;t++)
+ 267   1         {
+ 268   2          temp=(num/OLED_Pow(10,len-t-1))%10;
+ 269   2          if(enshow==0&&t<(len-1))
+ 270   2           {
+ 271   3            if(temp==0)
+ 272   3            {
+ 273   4              if(num_size == 8) OLED_ShowChar(x+(num_size/2+2)*t,y,' ',num_size);   
+ 274   4              else if(num_size == 16) OLED_ShowChar(x+(num_size/2)*t,y,' ',num_size);  
+ 275   4              continue;
+ 276   4            }else enshow=1; 
+ 277   3          }
+ 278   2         if(num_size == 8)  OLED_ShowChar(x+(num_size/2+2)*t,y,temp+'0',num_size);       
+ 279   2         else if(num_size == 16)  OLED_ShowChar(x+(num_size/2)*t,y,temp+'0',num_size);  
+ 280   2        }
+ 281   1      } 
+ 282           //========================================================================
+ 283          // ∫Ø ˝: 
+ 284          // √Ë ˆ: 
+ 285          // ≤Œ ˝: 
+ 286          // ∑µªÿ: 
+ 287          // ∞Ê±æ: 
+ 288          //========================================================================
+ 289            /* œ‘ æ±‰¡ø ˝◊÷      ¡–    ––   ±‰¡øƒ⁄»›  ◊÷∑˚≥§∂»   ◊÷∑˚¥Û–°16ªÚ8  */
+ 290          void OLED_ShowSignal(u8 x, u8 y, u8 signal, u8 *l)
+ 291          {
+ 292   1          u8 i=0;
+ 293   1        OLED_Set_Points(x, y); // …Ë÷√∆µ„
+ 294   1        for(i=0;i<*l;i++) 
+ 295   1        {
+ 296   2          Oled_Write_Data(0x00); 
+ 297   2        }
+ 298   1        OLED_Set_Points(x, y); // …Ë÷√∆µ„
+ 299   1          for(i=0;i<signal;i++) 
+ 300   1        {
+ 301   2          Oled_Write_Data(0x18); 
+C51 COMPILER V9.60.7.0   STC8G_H_OLED                                                      03/08/2025 20:42:39 PAGE 6   
+
+ 302   2        }
+ 303   1        *l = signal;
+ 304   1      }
+ 305          //========================================================================
+ 306          // ∫Ø ˝: 
+ 307          // √Ë ˆ: 
+ 308          // ≤Œ ˝: 
+ 309          // ∑µªÿ: 
+ 310          // ∞Ê±æ: 
+ 311          //========================================================================
+ 312          /* OLED12864 ∆¡ƒª≥ı ºªØ */
+ 313          
+ 314          // void OLED_Init(void)
+ 315          // { 
+ 316          //  Oled_Write_Cmd(0xAE); //πÿ±’œ‘ ædisplay off
+ 317          //  Oled_Write_Cmd(0x20); //Set Memory Addressing Mode  
+ 318          //  Oled_Write_Cmd(0x10); //00,Horizontal Addressing Mode;01,Vertical Addressing Mode;10,Page Addressing M
+             -ode (RESET,OLED_CMD);11,Invalid
+ 319          //  Oled_Write_Cmd(0xb0); //Set Page Start Address for Page Addressing Mode,0-7
+ 320          //  Oled_Write_Cmd(0xc8); //Set COM Output Scan Direction
+ 321          //  Oled_Write_Cmd(0x02); //-…Ë÷√µÕŒª¡–µÿ÷∑set low column address ◊¢“‚£∫0.96∆¡ƒª¥”0x00ø™ º–¥ ˝æ›£¨1.3¥Á∆¡ƒ
+             -ª¥”0x02ø™ º–¥ ˝æ›
+ 322          //  Oled_Write_Cmd(0x10); //-…Ë÷√∏ﬂŒª¡–µÿ÷∑set high column address
+ 323          //  Oled_Write_Cmd(0x40); //--set start line address
+ 324          //  Oled_Write_Cmd(0x81); //--set contrast control register
+ 325          //  Oled_Write_Cmd(0xff); //¡¡∂»µ˜Ω⁄ 0x00~0xff
+ 326          //  Oled_Write_Cmd(0xa1); //--set segment re-map 0 to 127
+ 327          //  Oled_Write_Cmd(0xa6); //--set normal display
+ 328          //  Oled_Write_Cmd(0xa8); //--set multiplex ratio(1 to 64,OLED_CMD)
+ 329          //  Oled_Write_Cmd(0x3F); //
+ 330          //  Oled_Write_Cmd(0xa4); //0xa4,Output follows RAM content;0xa5,Output ignores RAM content
+ 331          //  Oled_Write_Cmd(0xd3); //-…Ë÷√œ‘ æ∆´“∆set display offset
+ 332          //  Oled_Write_Cmd(0x00); //-√ª”–∆´“∆not offset
+ 333          //  Oled_Write_Cmd(0xd5); //-…Ë÷√ ±÷”∑÷∆µ“Ú◊”,’µ¥∆µ¬ set display clock divide ratio/oscillator frequency
+ 334          //  Oled_Write_Cmd(0xf0); //--set divide ratio
+ 335          //  Oled_Write_Cmd(0xd9); //--set pre-charge period
+ 336          //  Oled_Write_Cmd(0x22); //
+ 337          //  Oled_Write_Cmd(0xda); //--…Ë÷√COM”≤º˛“˝Ω≈≈‰÷√set com pins hardware configuration
+ 338          //  Oled_Write_Cmd(0x12);//[5:4]≈‰÷√
+ 339          //  Oled_Write_Cmd(0xdb); //--set vcomh
+ 340          //  Oled_Write_Cmd(0x20); //0x20,0.77xVcc
+ 341          //  Oled_Write_Cmd(0x8d); //-µÁ∫…±√…Ë÷√set DC-DC enable
+ 342          //  Oled_Write_Cmd(0x14); //bit2£¨ø™∆Ù/πÿ±’
+ 343          //  Oled_Write_Cmd(0xaf); //-ø™∆Ùœ‘ æ turn on oled panel
+ 344          // }
+ 345          
+ 346          void OLED_Init(void)
+ 347          { 
+ 348   1        Oled_Write_Cmd(0xAE);//πÿ±’œ‘ æ
+ 349   1        Oled_Write_Cmd(0x00);//set memory addressing Mode
+ 350   1        Oled_Write_Cmd(0X10);
+ 351   1        Oled_Write_Cmd(0X40);
+ 352   1        Oled_Write_Cmd(0X81);
+ 353   1        Oled_Write_Cmd(0XCF);//∑÷∆µ“Ú◊”
+ 354   1        Oled_Write_Cmd(0xA1);//…Ë÷√«˝∂Ø¬∑ ˝
+ 355   1        Oled_Write_Cmd(0xC8);//ƒ¨»œ0X3f(1/64) 0x1f(1/32)
+ 356   1        Oled_Write_Cmd(0xA6); //…Ë÷√œ‘ æ∆´“∆
+ 357   1        Oled_Write_Cmd(0xA8);//ƒ¨»œ÷µ00
+ 358   1          
+ 359   1        Oled_Write_Cmd(0x3F);//…Ë÷√ø™ º–– °æ5:0°ø£¨–– ˝
+ 360   1        
+ 361   1        Oled_Write_Cmd(0xD3);//µÁ∫…±√…Ë÷√
+C51 COMPILER V9.60.7.0   STC8G_H_OLED                                                      03/08/2025 20:42:39 PAGE 7   
+
+ 362   1        Oled_Write_Cmd(0x00);//bit2,ø™∆Ù/πÿ±’
+ 363   1        
+ 364   1        Oled_Write_Cmd(0xD5);//…Ë÷√ƒ⁄¥Êµÿ÷∑ƒ£ Ω
+ 365   1        Oled_Write_Cmd(0x80);//[[1:0],00£¨¡–µÿ÷∑ƒ£ Ω;01£¨––µÿ÷∑ƒ£ Ω;10,“≥µÿ÷∑ƒ£ Ω;ƒ¨»œ10;
+ 366   1        Oled_Write_Cmd(0xD9);//∂Œ÷ÿ∂®“Â…Ë÷√,bit0:0,0->0;1,0->127;
+ 367   1        Oled_Write_Cmd(0xF1);//…Ë÷√COM…®√Ë∑ΩœÚ
+ 368   1        
+ 369   1        Oled_Write_Cmd(0xDA);//…Ë÷√COM”≤º˛“˝Ω≈≈‰÷√
+ 370   1        Oled_Write_Cmd(0x12);//0.91”¢¥Á128*32∑÷±Ê¬ 
+ 371   1        
+ 372   1        Oled_Write_Cmd(0xDB);//∂‘±»∂»…Ë÷√
+ 373   1        Oled_Write_Cmd(0x40);//1~255(¡¡∂»…Ë÷√,‘Ω¥Û‘Ω¡¡)
+ 374   1        
+ 375   1        Oled_Write_Cmd(0x20);//…Ë÷√‘§≥‰µÁ÷‹∆⁄
+ 376   1        Oled_Write_Cmd(0x02);//[3:0],PHASE 1;[7:4],PHASE 2;
+ 377   1        Oled_Write_Cmd(0x8D);//…Ë÷√VCOMH µÁ—π±∂¬ 
+ 378   1        Oled_Write_Cmd(0x14);//[6:4] 000,0.65*vcc;001,0.77*vcc;011,0.83*vcc;
+ 379   1       
+ 380   1        Oled_Write_Cmd(0xA4);//»´æ÷œ‘ æø™∆Ù;bit0:1,ø™∆Ù;0,πÿ±’;(∞◊∆¡/∫⁄∆¡)
+ 381   1        Oled_Write_Cmd(0xA6);//…Ë÷√œ‘ æ∑Ω Ω;bit0:1,∑¥œ‡œ‘ æ;0,’˝≥£œ‘ æ
+ 382   1        
+ 383   1        Oled_Write_Cmd(0x2E);//Õ£”√πˆ∂ØÃı 
+ 384   1        Oled_Write_Cmd(0xAF);//ø™∆Ùœ‘ æ
+ 385   1      
+ 386   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    853    ----
+   CONSTANT SIZE    =   2072    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----      29
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  1 WARNING(S),  0 ERROR(S)

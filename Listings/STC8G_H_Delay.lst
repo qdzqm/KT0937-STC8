@@ -1,0 +1,55 @@
+C51 COMPILER V9.60.7.0   STC8G_H_DELAY                                                     03/09/2025 21:38:48 PAGE 1   
+
+
+C51 COMPILER V9.60.7.0, COMPILATION OF MODULE STC8G_H_DELAY
+OBJECT MODULE PLACED IN .\Objects\STC8G_H_Delay.obj
+COMPILER INVOKED BY: C:\Keil_v5\C51\BIN\C51.EXE src\STC8G_H_Delay.c ROM(COMPACT) OPTIMIZE(8,SIZE) BROWSE DEBUG OBJECTEXT
+                    -END PRINT(.\Listings\STC8G_H_Delay.lst) TABS(2) OBJECT(.\Objects\STC8G_H_Delay.obj)
+
+line level    source
+
+   1          /*---------------------------------------------------------------------*/
+   2          /* --- STC MCU Limited ------------------------------------------------*/
+   3          /* --- STC 1T Series MCU Demo Programme -------------------------------*/
+   4          /* --- Mobile: (86)13922805190 ----------------------------------------*/
+   5          /* --- Fax: 86-0513-55012956,55012947,55012969 ------------------------*/
+   6          /* --- Tel: 86-0513-55012928,55012929,55012966 ------------------------*/
+   7          /* --- Web: www.STCAI.com ---------------------------------------------*/
+   8          /* --- BBS: www.STCAIMCU.com  -----------------------------------------*/
+   9          /* --- QQ:  800003751 -------------------------------------------------*/
+  10          /* 如果要在程序中使用此代码,请在程序中注明使用了STC的资料及程序            */
+  11          /*---------------------------------------------------------------------*/
+  12          
+  13          #include  "include/STC8G_H_Delay.h"
+  14          
+  15          //========================================================================
+  16          // 函数: void delay_ms(unsigned char ms)
+  17          // 描述: 延时函数。
+  18          // 参数: ms,要延时的ms数, 这里只支持1~255ms. 自动适应主时钟.
+  19          // 返回: none.
+  20          // 版本: VER1.0
+  21          // 日期: 2021-3-9
+  22          // 备注: 
+  23          //========================================================================
+  24          void delay_ms(unsigned int ms)
+  25          {
+  26   1        unsigned int i;
+  27   1        do{
+  28   2          i = MAIN_Fosc / 10000;
+  29   2          while(--i);
+  30   2        }while(--ms);
+  31   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =     23    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)
